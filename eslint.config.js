@@ -1,10 +1,8 @@
-import pkg from 'eslint'
-const { defineConfig } = pkg
 import globals from 'globals'
 import js from '@eslint/js'
 import pluginVue from 'eslint-plugin-vue'
 
-export default defineConfig([
+export default [
   {
     name: 'app/files-to-lint',
     files: ['**/*.{js,mjs,jsx,vue}'],
@@ -24,4 +22,9 @@ export default defineConfig([
 
   js.configs.recommended,
   ...pluginVue.configs['flat/essential'],
-])
+  {
+    rules: {
+      'vue/multi-word-component-names': 'off',
+    },
+  },
+]

@@ -4,7 +4,7 @@ import LoginView from '@/views/LoginView.vue'
 import HomeView from '@/views/HomeView.vue'
 
 const router = createRouter({
-  history: createWebHistory(import.meta.env.BASE_URL),
+  history: createWebHistory(import.meta.env?.BASE_URL || '/'),
   routes: [
     {
       path: '/',
@@ -29,6 +29,7 @@ const router = createRouter({
     {
       path: '/dashboard',
       component: DefaultLayout,
+      meta: { requiresAuth: true },
       children: [
         {
           path: '',
@@ -65,9 +66,26 @@ const router = createRouter({
           name: 'configuracoes-webhooks',
           component: () => import('@/views/WebhooksView.vue'),
         },
+        {
+          path: 'perfil',
+          name: 'perfil',
+          component: () => import('@/views/PerfilView.vue'),
+        },
       ],
     },
   ],
+})
+
+router.beforeEach((to, from, next) => {
+  const isAuthenticated = localStorage.getItem('isAuthenticated') === 'true'
+
+  if (to.meta.requiresAuth && !isAuthenticated) {
+    next('/login')
+  } else if ((to.name === 'login' || to.name === 'register') && isAuthenticated) {
+    next('/dashboard')
+  } else {
+    next()
+  }
 })
 
 export default router

@@ -8,20 +8,44 @@ const password = ref('')
 const loading = ref(false)
 const error = ref('')
 
+const validateEmail = (email) => {
+  const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
+  return emailRegex.test(email)
+}
+
+const validatePassword = (password) => {
+  return password.length >= 6
+}
+
 const handleLogin = async () => {
+  error.value = ''
+
   if (!email.value || !password.value) {
     error.value = 'Por favor, preencha todos os campos.'
     return
   }
 
+  if (!validateEmail(email.value)) {
+    error.value = 'Por favor, insira um email válido.'
+    return
+  }
+
+  if (!validatePassword(password.value)) {
+    error.value = 'A senha deve ter pelo menos 6 caracteres.'
+    return
+  }
+
   loading.value = true
-  error.value = ''
 
   try {
     await new Promise((resolve) => setTimeout(resolve, 1000))
+
+    localStorage.setItem('isAuthenticated', 'true')
+    localStorage.setItem('userEmail', email.value)
+
     router.push({ name: 'dashboard' })
   } catch (err) {
-    error.value = 'Credenciais inválidas. Tente novamente.'
+    error.value = 'Erro ao fazer login. Tente novamente.'
   } finally {
     loading.value = false
   }
@@ -41,7 +65,7 @@ const goToResetPassword = () => {
     <div class="login-content">
       <div class="login-header">
         <img src="@/assets/logo.svg" alt="Middleware Multi-Gateways Logo" class="logo" />
-        <h1>Bem vindo ao Middleware Multi-Gateways</h1>
+        <h1>Bem vindo ao ConectaAI</h1>
         <p class="login-subtitle">Faça login para acessar o sistema</p>
       </div>
 

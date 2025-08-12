@@ -28,7 +28,6 @@ ChartJS.register(
   Filler,
 )
 
-// Dados de vendas mensais
 const vendasMensais = ref({
   labels: ['Jan', 'Fev', 'Mar', 'Abr', 'Mai', 'Jun', 'Jul', 'Ago', 'Set', 'Out', 'Nov', 'Dez'],
   datasets: [
@@ -49,7 +48,6 @@ const vendasMensais = ref({
   ],
 })
 
-// Dados de receita mensal
 const receitaMensal = ref({
   labels: ['Jan', 'Fev', 'Mar', 'Abr', 'Mai', 'Jun', 'Jul', 'Ago', 'Set', 'Out', 'Nov', 'Dez'],
   datasets: [
@@ -70,7 +68,6 @@ const receitaMensal = ref({
   ],
 })
 
-// Dados de vendas por categoria
 const vendasPorCategoria = ref({
   labels: ['Smartphones', 'Notebooks', 'Tablets', 'Acessórios', 'Smart TVs'],
   datasets: [
@@ -83,7 +80,6 @@ const vendasPorCategoria = ref({
   ],
 })
 
-// Dados de crescimento mensal
 const crescimentoMensal = ref({
   labels: ['Jan', 'Fev', 'Mar', 'Abr', 'Mai', 'Jun', 'Jul', 'Ago', 'Set', 'Out', 'Nov', 'Dez'],
   datasets: [
@@ -111,7 +107,6 @@ const crescimentoMensal = ref({
   ],
 })
 
-// Produtos mais vendidos
 const produtosMaisVendidos = [
   { nome: 'iPhone 15 Pro', vendas: 156, receita: 234000 },
   { nome: 'MacBook Air M2', vendas: 89, receita: 178000 },
@@ -120,7 +115,6 @@ const produtosMaisVendidos = [
   { nome: 'AirPods Pro', vendas: 234, receita: 117000 },
 ]
 
-// Estatísticas gerais
 const estatisticas = ref({
   vendasTotal: 0,
   receitaTotal: 0,
@@ -130,7 +124,6 @@ const estatisticas = ref({
   mediaReceita: 0,
 })
 
-// Calcular estatísticas
 const calcularEstatisticas = () => {
   const vendas = vendasMensais.value.datasets[0].data
   const receitas = receitaMensal.value.datasets[0].data
@@ -140,7 +133,6 @@ const calcularEstatisticas = () => {
   estatisticas.value.mediaVendas = Math.round(estatisticas.value.vendasTotal / 12)
   estatisticas.value.mediaReceita = Math.round(estatisticas.value.receitaTotal / 12)
 
-  // Calcular crescimento (último mês vs penúltimo mês)
   const crescimentoVendas = ((vendas[11] - vendas[10]) / vendas[10]) * 100
   const crescimentoReceita = ((receitas[11] - receitas[10]) / receitas[10]) * 100
 
@@ -148,12 +140,10 @@ const calcularEstatisticas = () => {
   estatisticas.value.crescimentoReceita = Math.round(crescimentoReceita * 10) / 10
 }
 
-// Máximo de vendas para calcular barras
 const maxVendas = computed(() => {
   return Math.max(...produtosMaisVendidos.map((p) => p.vendas))
 })
 
-// Configurações dos gráficos
 const chartOptions = {
   responsive: true,
   maintainAspectRatio: false,
@@ -168,6 +158,9 @@ const chartOptions = {
         color: 'rgba(255, 255, 255, 0.7)',
         font: {
           size: 12,
+        },
+        callback: function (value) {
+          return value.toLocaleString('pt-BR')
         },
       },
       border: {
@@ -198,10 +191,15 @@ const chartOptions = {
       backgroundColor: 'rgba(0, 0, 0, 0.9)',
       titleColor: 'rgba(255, 255, 255, 0.9)',
       bodyColor: 'rgba(255, 255, 255, 0.9)',
-      padding: 12,
-      borderColor: 'rgba(255, 255, 255, 0.2)',
+      borderColor: 'rgba(255, 255, 255, 0.1)',
       borderWidth: 1,
       cornerRadius: 8,
+      displayColors: false,
+      callbacks: {
+        label: function (context) {
+          return context.dataset.label + ': R$ ' + context.parsed.y.toLocaleString('pt-BR')
+        },
+      },
     },
   },
 }
@@ -221,6 +219,9 @@ const barChartOptions = {
         font: {
           size: 12,
         },
+        callback: function (value) {
+          return value + '%'
+        },
       },
       border: {
         display: false,
@@ -250,10 +251,15 @@ const barChartOptions = {
       backgroundColor: 'rgba(0, 0, 0, 0.9)',
       titleColor: 'rgba(255, 255, 255, 0.9)',
       bodyColor: 'rgba(255, 255, 255, 0.9)',
-      padding: 12,
-      borderColor: 'rgba(255, 255, 255, 0.2)',
+      borderColor: 'rgba(255, 255, 255, 0.1)',
       borderWidth: 1,
       cornerRadius: 8,
+      displayColors: false,
+      callbacks: {
+        label: function (context) {
+          return context.dataset.label + ': ' + context.parsed.y + '%'
+        },
+      },
     },
   },
 }
@@ -263,16 +269,30 @@ const doughnutOptions = {
   maintainAspectRatio: false,
   plugins: {
     legend: {
-      display: false,
+      position: 'bottom',
+      labels: {
+        color: 'rgba(255, 255, 255, 0.7)',
+        font: {
+          size: 12,
+        },
+        padding: 20,
+        usePointStyle: true,
+      },
     },
     tooltip: {
       backgroundColor: 'rgba(0, 0, 0, 0.9)',
       titleColor: 'rgba(255, 255, 255, 0.9)',
       bodyColor: 'rgba(255, 255, 255, 0.9)',
-      padding: 12,
-      borderColor: 'rgba(255, 255, 255, 0.2)',
+      borderColor: 'rgba(255, 255, 255, 0.1)',
       borderWidth: 1,
       cornerRadius: 8,
+      callbacks: {
+        label: function (context) {
+          const total = context.dataset.data.reduce((a, b) => a + b, 0)
+          const percentage = ((context.parsed / total) * 100).toFixed(1)
+          return context.label + ': ' + percentage + '%'
+        },
+      },
     },
   },
 }
@@ -284,20 +304,16 @@ onMounted(() => {
 
 <template>
   <div class="dashboard-container">
-    <!-- Cards de estatísticas -->
     <div class="stats-grid">
       <div class="stat-card">
         <div class="stat-icon">📈</div>
         <div class="stat-content">
           <h3>Vendas Totais</h3>
           <div class="stat-value">R$ {{ estatisticas.vendasTotal.toLocaleString('pt-BR') }}</div>
-          <div
-            class="stat-change"
-            :class="estatisticas.crescimentoVendas >= 0 ? 'positive' : 'negative'"
-          >
-            {{ estatisticas.crescimentoVendas >= 0 ? '+' : ''
-            }}{{ estatisticas.crescimentoVendas }}%
+          <div class="stat-change" :class="{ positive: estatisticas.crescimentoVendas > 0 }">
+            {{ estatisticas.crescimentoVendas > 0 ? '+' : '' }}{{ estatisticas.crescimentoVendas }}%
           </div>
+          <div class="stat-subtitle">vs mês anterior</div>
         </div>
       </div>
 
@@ -306,76 +322,78 @@ onMounted(() => {
         <div class="stat-content">
           <h3>Receita Total</h3>
           <div class="stat-value">R$ {{ estatisticas.receitaTotal.toLocaleString('pt-BR') }}</div>
-          <div
-            class="stat-change"
-            :class="estatisticas.crescimentoReceita >= 0 ? 'positive' : 'negative'"
-          >
-            {{ estatisticas.crescimentoReceita >= 0 ? '+' : ''
+          <div class="stat-change" :class="{ positive: estatisticas.crescimentoReceita > 0 }">
+            {{ estatisticas.crescimentoReceita > 0 ? '+' : ''
             }}{{ estatisticas.crescimentoReceita }}%
           </div>
+          <div class="stat-subtitle">vs mês anterior</div>
         </div>
       </div>
 
       <div class="stat-card">
         <div class="stat-icon">📊</div>
         <div class="stat-content">
-          <h3>Média Mensal</h3>
+          <h3>Média de Vendas</h3>
           <div class="stat-value">R$ {{ estatisticas.mediaVendas.toLocaleString('pt-BR') }}</div>
-          <div class="stat-subtitle">Vendas</div>
+          <div class="stat-subtitle">por mês</div>
         </div>
       </div>
 
       <div class="stat-card">
         <div class="stat-icon">🎯</div>
         <div class="stat-content">
-          <h3>Meta Atingida</h3>
-          <div class="stat-value">87%</div>
-          <div class="stat-subtitle">Do objetivo anual</div>
+          <h3>Média de Receita</h3>
+          <div class="stat-value">R$ {{ estatisticas.mediaReceita.toLocaleString('pt-BR') }}</div>
+          <div class="stat-subtitle">por mês</div>
         </div>
       </div>
     </div>
 
-    <!-- Gráficos principais -->
     <div class="charts-grid">
       <div class="chart-card">
-        <h2>Vendas Mensais</h2>
+        <h3>Vendas Mensais</h3>
         <div class="chart-container">
           <Line :data="vendasMensais" :options="chartOptions" />
         </div>
       </div>
 
       <div class="chart-card">
-        <h2>Receita Mensal</h2>
+        <h3>Receita Mensal</h3>
         <div class="chart-container">
           <Line :data="receitaMensal" :options="chartOptions" />
         </div>
       </div>
 
       <div class="chart-card">
-        <h2>Crescimento Mensal</h2>
+        <h3>Crescimento Mensal</h3>
         <div class="chart-container">
           <Bar :data="crescimentoMensal" :options="barChartOptions" />
         </div>
       </div>
 
       <div class="chart-card">
-        <h2>Vendas por Categoria</h2>
+        <h3>Vendas por Categoria</h3>
         <div class="chart-container">
           <Doughnut :data="vendasPorCategoria" :options="doughnutOptions" />
         </div>
       </div>
     </div>
 
-    <!-- Produtos mais vendidos -->
     <div class="products-section">
       <h2>Produtos Mais Vendidos</h2>
       <div class="products-grid">
         <div v-for="produto in produtosMaisVendidos" :key="produto.nome" class="product-card">
           <div class="product-info">
-            <h3>{{ produto.nome }}</h3>
+            <h3 class="product-name">{{ produto.nome }}</h3>
             <div class="product-stats">
-              <span class="product-sales">{{ produto.vendas }} vendas</span>
-              <span class="product-revenue">R$ {{ produto.receita.toLocaleString('pt-BR') }}</span>
+              <div class="product-sales">
+                <span class="stat-label">Vendas:</span>
+                <span class="stat-value">{{ produto.vendas }}</span>
+              </div>
+              <div class="product-revenue">
+                <span class="stat-label">Receita:</span>
+                <span class="stat-value">R$ {{ produto.receita.toLocaleString('pt-BR') }}</span>
+              </div>
             </div>
           </div>
           <div class="product-bar-container">
@@ -397,11 +415,10 @@ onMounted(() => {
   margin: 0 auto;
 }
 
-/* Cards de estatísticas */
 .stats-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
-  gap: 20px;
+  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+  gap: 24px;
   margin-bottom: 32px;
 }
 
@@ -450,14 +467,12 @@ onMounted(() => {
 .stat-change {
   font-size: 14px;
   font-weight: 600;
+  color: #f44336;
+  margin-bottom: 4px;
 }
 
 .stat-change.positive {
   color: #4caf50;
-}
-
-.stat-change.negative {
-  color: #f44336;
 }
 
 .stat-subtitle {
@@ -465,10 +480,9 @@ onMounted(() => {
   color: rgba(255, 255, 255, 0.6);
 }
 
-/* Grid de gráficos */
 .charts-grid {
   display: grid;
-  grid-template-columns: repeat(2, 1fr);
+  grid-template-columns: repeat(auto-fit, minmax(500px, 1fr));
   gap: 24px;
   margin-bottom: 32px;
 }
@@ -479,12 +493,18 @@ onMounted(() => {
   border-radius: 16px;
   padding: 24px;
   backdrop-filter: blur(10px);
+  transition: all 0.3s ease;
 }
 
-.chart-card h2 {
+.chart-card:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 8px 25px rgba(0, 0, 0, 0.2);
+}
+
+.chart-card h3 {
   font-size: 18px;
   font-weight: 600;
-  color: #ffffff;
+  color: white;
   margin: 0 0 20px 0;
 }
 
@@ -493,7 +513,6 @@ onMounted(() => {
   position: relative;
 }
 
-/* Seção de produtos */
 .products-section {
   background: rgba(255, 255, 255, 0.05);
   border: 1px solid rgba(255, 255, 255, 0.1);
@@ -503,82 +522,80 @@ onMounted(() => {
 }
 
 .products-section h2 {
-  font-size: 18px;
+  font-size: 20px;
   font-weight: 600;
-  color: #ffffff;
-  margin: 0 0 20px 0;
+  color: white;
+  margin: 0 0 24px 0;
 }
 
 .products-grid {
-  display: flex;
-  flex-direction: column;
+  display: grid;
   gap: 16px;
 }
 
 .product-card {
-  background: rgba(255, 255, 255, 0.05);
-  border-radius: 12px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
   padding: 16px;
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 12px;
   transition: all 0.3s ease;
 }
 
 .product-card:hover {
-  background: rgba(255, 255, 255, 0.1);
+  background: rgba(255, 255, 255, 0.08);
+  border-color: rgba(0, 122, 255, 0.3);
 }
 
 .product-info {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  margin-bottom: 12px;
+  flex: 1;
 }
 
-.product-info h3 {
+.product-name {
   font-size: 16px;
   font-weight: 600;
-  color: #ffffff;
-  margin: 0;
+  color: white;
+  margin: 0 0 8px 0;
 }
 
 .product-stats {
   display: flex;
+  gap: 24px;
+}
+
+.product-sales,
+.product-revenue {
+  display: flex;
   flex-direction: column;
-  align-items: flex-end;
   gap: 4px;
 }
 
-.product-sales {
-  font-size: 14px;
-  color: rgba(255, 255, 255, 0.8);
-  font-weight: 500;
+.stat-label {
+  font-size: 12px;
+  color: rgba(255, 255, 255, 0.6);
 }
 
-.product-revenue {
+.stat-value {
   font-size: 14px;
-  color: #4caf50;
   font-weight: 600;
+  color: white;
 }
 
 .product-bar-container {
-  width: 100%;
-  height: 6px;
+  width: 120px;
+  height: 8px;
   background: rgba(255, 255, 255, 0.1);
-  border-radius: 3px;
+  border-radius: 4px;
   overflow: hidden;
 }
 
 .product-bar {
   height: 100%;
-  background: linear-gradient(90deg, #007aff, #4caf50);
-  border-radius: 3px;
+  background: linear-gradient(90deg, #007aff, #0056cc);
+  border-radius: 4px;
   transition: width 0.3s ease;
-}
-
-/* Responsividade */
-@media (max-width: 1200px) {
-  .charts-grid {
-    grid-template-columns: 1fr;
-  }
 }
 
 @media (max-width: 768px) {
@@ -590,18 +607,21 @@ onMounted(() => {
     grid-template-columns: 1fr;
   }
 
+  .charts-grid {
+    grid-template-columns: 1fr;
+  }
+
   .chart-container {
     height: 250px;
   }
 
-  .product-info {
+  .product-stats {
     flex-direction: column;
-    align-items: flex-start;
     gap: 8px;
   }
 
-  .product-stats {
-    align-items: flex-start;
+  .product-bar-container {
+    width: 80px;
   }
 }
 </style>

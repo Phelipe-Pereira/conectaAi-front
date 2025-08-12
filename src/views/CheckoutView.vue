@@ -13,8 +13,8 @@ const produtos = ref([
     id: 2,
     nome: 'Fones de Ouvido Wireless',
     preco: 299.99,
-    imagem: 'https://via.placeholder.com/80x80/00CC66/FFFFFF?text=🎧',
-    quantidade: 1,
+    imagem: 'https://via.placeholder.com/80x80/00CC66/FFFFFF?text=��',
+    quantidade: 2,
   },
   {
     id: 3,
@@ -25,48 +25,107 @@ const produtos = ref([
   },
 ])
 
-const gateways = ref([
-  { id: 'stripe', nome: 'Stripe', ativo: true },
-  { id: 'asaas', nome: 'Asaas', ativo: true },
-  { id: 'mercadopago', nome: 'MercadoPago', ativo: false },
-])
-
-const dadosCliente = ref({
+const cliente = ref({
   nome: '',
   email: '',
   telefone: '',
   cpf: '',
+  endereco: '',
+  cidade: '',
+  estado: '',
+  cep: '',
 })
 
-const dadosPagamento = ref({
-  gateway: 'stripe',
-  metodo: 'cartao',
-  numeroCartao: '',
-  nomeCartao: '',
+const pagamento = ref({
+  forma: 'Cartão de Crédito',
+  numero: '',
+  titular: '',
   validade: '',
   cvv: '',
   parcelas: 1,
 })
 
-const showPaymentModal = ref(false)
-const paymentStatus = ref('')
-const paymentResult = ref(null)
+const showProcessingModal = ref(false)
+const processingStatus = ref('')
+const processingResult = ref(null)
 
-const total = computed(() => {
-  return produtos.value.reduce((acc, produto) => {
-    return acc + produto.preco * produto.quantidade
+const formasPagamento = ref(['Cartão de Crédito', 'Cartão de Débito', 'PIX', 'Boleto', 'PayPal'])
+
+const parcelasOptions = ref([1, 2, 3, 6, 12])
+
+const subtotal = computed(() => {
+  return produtos.value.reduce((total, produto) => {
+    return total + produto.preco * produto.quantidade
   }, 0)
 })
 
-const alterarQuantidade = (produto, delta) => {
+const frete = computed(() => {
+  return subtotal.value > 500 ? 0 : 29.99
+})
+
+const total = computed(() => {
+  return subtotal.value + frete.value
+})
+
+const valorParcela = computed(() => {
+  return total.value / pagamento.value.parcelas
+})
+
+const updateQuantidade = (produto, delta) => {
   const novaQuantidade = produto.quantidade + delta
   if (novaQuantidade > 0) {
     produto.quantidade = novaQuantidade
+  } else {
+    removeProduto(produto.id)
   }
 }
 
-const removerProduto = (id) => {
-  produtos.value = produtos.value.filter((p) => p.id !== id)
+const removeProduto = (id) => {
+  const index = produtos.value.findIndex((p) => p.id === id)
+  if (index > -1) {
+    produtos.value.splice(index, 1)
+  }
+}
+
+const processarPagamento = async () => {
+  showProcessingModal.value = true
+  processingStatus.value = 'Processando pagamento...'
+
+  await new Promise((resolve) => setTimeout(resolve, 2000))
+
+  processingStatus.value = 'Validando dados...'
+
+  await new Promise((resolve) => setTimeout(resolve, 1500))
+
+  processingStatus.value = 'Conectando com gateway...'
+
+  await new Promise((resolve) => setTimeout(resolve, 1000))
+
+  const sucesso = Math.random() > 0.3
+
+  if (sucesso) {
+    processingStatus.value = 'Pagamento aprovado!'
+    processingResult.value = {
+      sucesso: true,
+      codigo: 'TXN' + Math.random().toString(36).substr(2, 9).toUpperCase(),
+      mensagem: 'Seu pagamento foi processado com sucesso!',
+    }
+  } else {
+    processingStatus.value = 'Pagamento recusado'
+    processingResult.value = {
+      sucesso: false,
+      codigo: 'ERR' + Math.random().toString(36).substr(2, 9).toUpperCase(),
+      mensagem: 'Não foi possível processar seu pagamento. Verifique os dados e tente novamente.',
+    }
+  }
+
+  await new Promise((resolve) => setTimeout(resolve, 2000))
+}
+
+const fecharModal = () => {
+  showProcessingModal.value = false
+  processingStatus.value = ''
+  processingResult.value = null
 }
 
 const formatarMoeda = (valor) => {
@@ -75,291 +134,176 @@ const formatarMoeda = (valor) => {
     currency: 'BRL',
   })
 }
-
-const processarPagamento = () => {
-  if (!dadosCliente.value.nome || !dadosCliente.value.email) {
-    alert('Por favor, preencha os dados do cliente')
-    return
-  }
-
-  if (dadosPagamento.value.metodo === 'cartao' && !dadosPagamento.value.numeroCartao) {
-    alert('Por favor, preencha os dados do cartão')
-    return
-  }
-
-  showPaymentModal.value = true
-  paymentStatus.value = 'Processando...'
-
-  // Simular processamento de pagamento
-  setTimeout(() => {
-    const sucesso = Math.random() > 0.3 // 70% de chance de sucesso
-    if (sucesso) {
-      paymentStatus.value = 'Aprovado'
-      paymentResult.value = {
-        id: 'PAY-' + Date.now(),
-        status: 'Aprovado',
-        gateway: dadosPagamento.value.gateway,
-        valor: total.value,
-        data: new Date().toLocaleString('pt-BR'),
-      }
-    } else {
-      paymentStatus.value = 'Rejeitado'
-      paymentResult.value = {
-        status: 'Rejeitado',
-        motivo: 'Cartão recusado ou dados inválidos',
-      }
-    }
-  }, 3000)
-}
-
-const fecharModal = () => {
-  showPaymentModal.value = false
-  paymentStatus.value = ''
-  paymentResult.value = null
-}
-
-const limparCarrinho = () => {
-  produtos.value = []
-}
 </script>
 
 <template>
   <div class="checkout-container">
-    <div class="page-header">
-      <h1>Checkout Simulado</h1>
-      <p class="subtitle">Teste as integrações com os gateways de pagamento</p>
+    <div class="checkout-header">
+      <h1>Finalizar Compra</h1>
+      <p>Complete suas informações para finalizar o pedido</p>
     </div>
 
     <div class="checkout-content">
-      <div class="checkout-grid">
-        <!-- Carrinho de Compras -->
-        <div class="carrinho-section card">
-          <div class="section-header">
-            <h2>🛒 Carrinho de Compras</h2>
-            <button v-if="produtos.length > 0" class="btn btn-danger" @click="limparCarrinho">
-              Limpar
-            </button>
-          </div>
+      <div class="checkout-main">
+        <div class="section">
+          <h2>Dados do Cliente</h2>
+          <div class="form-grid">
+            <div class="form-group">
+              <label>Nome Completo *</label>
+              <input v-model="cliente.nome" type="text" required />
+            </div>
 
-          <div v-if="produtos.length === 0" class="carrinho-vazio">
-            <p>Seu carrinho está vazio</p>
-            <button class="btn btn-primary">Adicionar Produtos</button>
-          </div>
+            <div class="form-group">
+              <label>Email *</label>
+              <input v-model="cliente.email" type="email" required />
+            </div>
 
-          <div v-else class="produtos-lista">
-            <div v-for="produto in produtos" :key="produto.id" class="produto-item">
-              <img :src="produto.imagem" :alt="produto.nome" class="produto-imagem" />
-              <div class="produto-info">
-                <h3>{{ produto.nome }}</h3>
-                <p class="produto-preco">{{ formatarMoeda(produto.preco) }}</p>
+            <div class="form-group">
+              <label>Telefone *</label>
+              <input v-model="cliente.telefone" type="tel" required />
+            </div>
+
+            <div class="form-group">
+              <label>CPF *</label>
+              <input v-model="cliente.cpf" type="text" required />
+            </div>
+
+            <div class="form-group full-width">
+              <label>Endereço *</label>
+              <input v-model="cliente.endereco" type="text" required />
+            </div>
+
+            <div class="form-group">
+              <label>Cidade *</label>
+              <input v-model="cliente.cidade" type="text" required />
+            </div>
+
+            <div class="form-group">
+              <label>Estado *</label>
+              <input v-model="cliente.estado" type="text" required />
+            </div>
+
+            <div class="form-group">
+              <label>CEP *</label>
+              <input v-model="cliente.cep" type="text" required />
+            </div>
+          </div>
+        </div>
+
+        <div class="section">
+          <h2>Forma de Pagamento</h2>
+          <div class="form-grid">
+            <div class="form-group">
+              <label>Forma de Pagamento *</label>
+              <select v-model="pagamento.forma" required>
+                <option v-for="forma in formasPagamento" :key="forma" :value="forma">
+                  {{ forma }}
+                </option>
+              </select>
+            </div>
+
+            <div v-if="pagamento.forma.includes('Cartão')" class="form-group">
+              <label>Número do Cartão *</label>
+              <input v-model="pagamento.numero" type="text" required />
+            </div>
+
+            <div v-if="pagamento.forma.includes('Cartão')" class="form-group">
+              <label>Nome do Titular *</label>
+              <input v-model="pagamento.titular" type="text" required />
+            </div>
+
+            <div v-if="pagamento.forma.includes('Cartão')" class="form-group">
+              <label>Validade *</label>
+              <input v-model="pagamento.validade" type="text" placeholder="MM/AA" required />
+            </div>
+
+            <div v-if="pagamento.forma.includes('Cartão')" class="form-group">
+              <label>CVV *</label>
+              <input v-model="pagamento.cvv" type="text" required />
+            </div>
+
+            <div v-if="pagamento.forma === 'Cartão de Crédito'" class="form-group">
+              <label>Parcelas</label>
+              <select v-model="pagamento.parcelas">
+                <option v-for="parcela in parcelasOptions" :key="parcela" :value="parcela">
+                  {{ parcela }}x de {{ formatarMoeda(valorParcela) }}
+                </option>
+              </select>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="checkout-sidebar">
+        <div class="cart-summary">
+          <h2>Resumo do Pedido</h2>
+
+          <div class="cart-items">
+            <div v-for="produto in produtos" :key="produto.id" class="cart-item">
+              <img :src="produto.imagem" :alt="produto.nome" class="item-image" />
+              <div class="item-info">
+                <h3 class="item-name">{{ produto.nome }}</h3>
+                <div class="item-price">{{ formatarMoeda(produto.preco) }}</div>
               </div>
-              <div class="produto-quantidade">
-                <button @click="alterarQuantidade(produto, -1)" class="btn-quantidade">-</button>
-                <span>{{ produto.quantidade }}</span>
-                <button @click="alterarQuantidade(produto, 1)" class="btn-quantidade">+</button>
+              <div class="item-quantity">
+                <button @click="updateQuantidade(produto, -1)" class="btn-quantity">-</button>
+                <span class="quantity">{{ produto.quantidade }}</span>
+                <button @click="updateQuantidade(produto, 1)" class="btn-quantity">+</button>
               </div>
-              <div class="produto-total">
-                <p>{{ formatarMoeda(produto.preco * produto.quantidade) }}</p>
-                <button @click="removerProduto(produto.id)" class="btn-remover">×</button>
-              </div>
+              <button @click="removeProduto(produto.id)" class="btn-remove">🗑️</button>
             </div>
           </div>
 
-          <div v-if="produtos.length > 0" class="carrinho-total">
-            <div class="total-item">
+          <div class="cart-totals">
+            <div class="total-row">
               <span>Subtotal:</span>
-              <span>{{ formatarMoeda(total) }}</span>
+              <span>{{ formatarMoeda(subtotal) }}</span>
             </div>
-            <div class="total-item">
+            <div class="total-row">
               <span>Frete:</span>
-              <span>Grátis</span>
+              <span>{{ formatarMoeda(frete) }}</span>
             </div>
-            <div class="total-item total-final">
+            <div class="total-row total-final">
               <span>Total:</span>
               <span>{{ formatarMoeda(total) }}</span>
             </div>
           </div>
-        </div>
 
-        <!-- Dados do Cliente -->
-        <div class="dados-section card">
-          <h2>👤 Dados do Cliente</h2>
-          <div class="form-grid">
-            <div class="form-group">
-              <label>Nome Completo</label>
-              <input
-                v-model="dadosCliente.nome"
-                type="text"
-                class="input"
-                placeholder="Digite seu nome"
-              />
-            </div>
-            <div class="form-group">
-              <label>E-mail</label>
-              <input
-                v-model="dadosCliente.email"
-                type="email"
-                class="input"
-                placeholder="seu@email.com"
-              />
-            </div>
-            <div class="form-group">
-              <label>Telefone</label>
-              <input
-                v-model="dadosCliente.telefone"
-                type="tel"
-                class="input"
-                placeholder="(11) 99999-9999"
-              />
-            </div>
-            <div class="form-group">
-              <label>CPF</label>
-              <input
-                v-model="dadosCliente.cpf"
-                type="text"
-                class="input"
-                placeholder="000.000.000-00"
-              />
-            </div>
-          </div>
-        </div>
-
-        <!-- Dados de Pagamento -->
-        <div class="pagamento-section card">
-          <h2>💳 Dados de Pagamento</h2>
-
-          <div class="gateway-selection">
-            <label>Gateway de Pagamento:</label>
-            <div class="gateway-options">
-              <label v-for="gateway in gateways" :key="gateway.id" class="gateway-option">
-                <input
-                  type="radio"
-                  :value="gateway.id"
-                  v-model="dadosPagamento.gateway"
-                  :disabled="!gateway.ativo"
-                />
-                <span :class="{ disabled: !gateway.ativo }">{{ gateway.nome }}</span>
-              </label>
-            </div>
-          </div>
-
-          <div class="metodo-selection">
-            <label>Método de Pagamento:</label>
-            <div class="metodo-options">
-              <label class="metodo-option">
-                <input type="radio" value="cartao" v-model="dadosPagamento.metodo" />
-                <span>Cartão de Crédito</span>
-              </label>
-              <label class="metodo-option">
-                <input type="radio" value="pix" v-model="dadosPagamento.metodo" />
-                <span>PIX</span>
-              </label>
-              <label class="metodo-option">
-                <input type="radio" value="boleto" v-model="dadosPagamento.metodo" />
-                <span>Boleto</span>
-              </label>
-            </div>
-          </div>
-
-          <div v-if="dadosPagamento.metodo === 'cartao'" class="cartao-form">
-            <div class="form-grid">
-              <div class="form-group">
-                <label>Número do Cartão</label>
-                <input
-                  v-model="dadosPagamento.numeroCartao"
-                  type="text"
-                  class="input"
-                  placeholder="0000 0000 0000 0000"
-                />
-              </div>
-              <div class="form-group">
-                <label>Nome no Cartão</label>
-                <input
-                  v-model="dadosPagamento.nomeCartao"
-                  type="text"
-                  class="input"
-                  placeholder="NOME COMO ESTÁ NO CARTÃO"
-                />
-              </div>
-              <div class="form-group">
-                <label>Validade</label>
-                <input
-                  v-model="dadosPagamento.validade"
-                  type="text"
-                  class="input"
-                  placeholder="MM/AA"
-                />
-              </div>
-              <div class="form-group">
-                <label>CVV</label>
-                <input v-model="dadosPagamento.cvv" type="text" class="input" placeholder="123" />
-              </div>
-              <div class="form-group">
-                <label>Parcelas</label>
-                <select v-model="dadosPagamento.parcelas" class="input">
-                  <option value="1">1x sem juros</option>
-                  <option value="2">2x sem juros</option>
-                  <option value="3">3x sem juros</option>
-                  <option value="6">6x com juros</option>
-                  <option value="12">12x com juros</option>
-                </select>
-              </div>
-            </div>
-          </div>
-
-          <div class="pagamento-actions">
-            <button @click="processarPagamento" class="btn btn-primary btn-large">
-              Finalizar Compra - {{ formatarMoeda(total) }}
-            </button>
-          </div>
+          <button @click="processarPagamento" class="btn-checkout">Finalizar Compra</button>
         </div>
       </div>
     </div>
 
-    <!-- Modal de Processamento de Pagamento -->
-    <div v-if="showPaymentModal" class="modal-overlay">
-      <div class="modal-content card">
+    <div v-if="showProcessingModal" class="modal-overlay">
+      <div class="modal-content">
         <div class="modal-header">
           <h2>Processando Pagamento</h2>
         </div>
 
         <div class="modal-body">
-          <div v-if="paymentStatus === 'Processando...'" class="processing">
-            <div class="spinner"></div>
-            <p>{{ paymentStatus }}</p>
-            <p class="processing-details">
-              Gateway: {{ dadosPagamento.gateway }}<br />
-              Valor: {{ formatarMoeda(total) }}
-            </p>
+          <div v-if="!processingResult" class="processing-state">
+            <div class="loading-spinner"></div>
+            <p class="processing-status">{{ processingStatus }}</p>
           </div>
 
-          <div v-else-if="paymentResult" class="payment-result">
-            <div v-if="paymentResult.status === 'Aprovado'" class="success-result">
-              <div class="result-icon">✅</div>
-              <h3>Pagamento Aprovado!</h3>
-              <div class="result-details">
-                <p><strong>ID da Transação:</strong> {{ paymentResult.id }}</p>
-                <p><strong>Gateway:</strong> {{ paymentResult.gateway }}</p>
-                <p><strong>Valor:</strong> {{ formatarMoeda(paymentResult.valor) }}</p>
-                <p><strong>Data:</strong> {{ paymentResult.data }}</p>
-              </div>
+          <div v-else class="result-state">
+            <div
+              class="result-icon"
+              :class="{ success: processingResult.sucesso, error: !processingResult.sucesso }"
+            >
+              {{ processingResult.sucesso ? '✅' : '❌' }}
             </div>
-
-            <div v-else class="error-result">
-              <div class="result-icon">❌</div>
-              <h3>Pagamento Rejeitado</h3>
-              <div class="result-details">
-                <p><strong>Motivo:</strong> {{ paymentResult.motivo }}</p>
-                <p>Tente novamente com outros dados de pagamento.</p>
-              </div>
-            </div>
+            <h3 class="result-title">
+              {{ processingResult.sucesso ? 'Pagamento Aprovado!' : 'Pagamento Recusado' }}
+            </h3>
+            <p class="result-message">{{ processingResult.mensagem }}</p>
+            <div class="result-code">Código: {{ processingResult.codigo }}</div>
           </div>
         </div>
 
         <div class="modal-footer">
-          <button @click="fecharModal" class="btn btn-secondary">Fechar</button>
-          <button v-if="paymentResult?.status === 'Aprovado'" class="btn btn-primary">
-            Ver Detalhes da Transação
+          <button @click="fecharModal" class="btn-close">
+            {{ processingResult ? 'Fechar' : 'Cancelar' }}
           </button>
         </div>
       </div>
@@ -369,224 +313,251 @@ const limparCarrinho = () => {
 
 <style scoped>
 .checkout-container {
-  padding: var(--spacing-lg);
+  padding: 24px;
+  max-width: 1400px;
+  margin: 0 auto;
 }
 
-.page-header {
-  margin-bottom: var(--spacing-lg);
+.checkout-header {
+  text-align: center;
+  margin-bottom: 32px;
 }
 
-.page-header h1 {
-  color: var(--text-primary);
-  font-size: 1.75rem;
-  font-weight: 600;
-  margin-bottom: var(--spacing-xs);
+.checkout-header h1 {
+  font-size: 32px;
+  font-weight: 700;
+  color: white;
+  margin: 0 0 8px 0;
 }
 
-.subtitle {
-  color: var(--text-secondary);
-  font-size: 1rem;
+.checkout-header p {
+  font-size: 16px;
+  color: rgba(255, 255, 255, 0.7);
+  margin: 0;
 }
 
 .checkout-content {
-  margin-top: var(--spacing-lg);
-}
-
-.checkout-grid {
   display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: var(--spacing-lg);
+  grid-template-columns: 1fr 400px;
+  gap: 32px;
 }
 
-.carrinho-section {
-  grid-column: 1 / -1;
-}
-
-.section-header {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  margin-bottom: var(--spacing-lg);
-}
-
-.section-header h2 {
-  color: var(--text-primary);
-  font-size: 1.25rem;
-  margin: 0;
-}
-
-.carrinho-vazio {
-  text-align: center;
-  padding: var(--spacing-xl);
-  color: var(--text-secondary);
-}
-
-.produtos-lista {
+.checkout-main {
   display: flex;
   flex-direction: column;
-  gap: var(--spacing-md);
+  gap: 32px;
 }
 
-.produto-item {
-  display: flex;
-  align-items: center;
-  gap: var(--spacing-md);
-  padding: var(--spacing-md);
-  background-color: var(--bg-tertiary);
-  border-radius: var(--border-radius-sm);
+.section {
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 16px;
+  padding: 24px;
+  backdrop-filter: blur(10px);
 }
 
-.produto-imagem {
-  width: 60px;
-  height: 60px;
-  border-radius: var(--border-radius-sm);
-  object-fit: cover;
-}
-
-.produto-info {
-  flex: 1;
-}
-
-.produto-info h3 {
-  margin: 0 0 var(--spacing-xs) 0;
-  color: var(--text-primary);
-  font-size: 1rem;
-}
-
-.produto-preco {
-  color: var(--text-secondary);
-  font-size: 0.875rem;
-  margin: 0;
-}
-
-.produto-quantidade {
-  display: flex;
-  align-items: center;
-  gap: var(--spacing-sm);
-}
-
-.btn-quantidade {
-  width: 30px;
-  height: 30px;
-  border: 1px solid var(--border-color);
-  background: var(--bg-secondary);
-  border-radius: var(--border-radius-sm);
-  cursor: pointer;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-}
-
-.produto-total {
-  display: flex;
-  align-items: center;
-  gap: var(--spacing-sm);
-}
-
-.produto-total p {
-  margin: 0;
+.section h2 {
+  font-size: 20px;
   font-weight: 600;
-  color: var(--text-primary);
-}
-
-.btn-remover {
-  background: none;
-  border: none;
-  color: var(--error);
-  font-size: 1.25rem;
-  cursor: pointer;
-  padding: var(--spacing-xs);
-}
-
-.carrinho-total {
-  margin-top: var(--spacing-lg);
-  padding-top: var(--spacing-lg);
-  border-top: 1px solid var(--border-color);
-}
-
-.total-item {
-  display: flex;
-  justify-content: space-between;
-  margin-bottom: var(--spacing-sm);
-}
-
-.total-final {
-  font-weight: 600;
-  font-size: 1.125rem;
-  color: var(--text-primary);
-  border-top: 1px solid var(--border-color);
-  padding-top: var(--spacing-sm);
-  margin-top: var(--spacing-sm);
-}
-
-.dados-section,
-.pagamento-section {
-  padding: var(--spacing-lg);
-}
-
-.dados-section h2,
-.pagamento-section h2 {
-  color: var(--text-primary);
-  font-size: 1.25rem;
-  margin-bottom: var(--spacing-lg);
+  color: white;
+  margin: 0 0 24px 0;
 }
 
 .form-grid {
   display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: var(--spacing-md);
+  grid-template-columns: repeat(2, 1fr);
+  gap: 20px;
 }
 
 .form-group {
   display: flex;
   flex-direction: column;
-  gap: var(--spacing-xs);
+}
+
+.form-group.full-width {
+  grid-column: 1 / -1;
 }
 
 .form-group label {
-  color: var(--text-primary);
-  font-size: 0.875rem;
+  font-size: 14px;
   font-weight: 500;
+  color: rgba(255, 255, 255, 0.8);
+  margin-bottom: 8px;
 }
 
-.gateway-selection,
-.metodo-selection {
-  margin-bottom: var(--spacing-lg);
+.form-group input,
+.form-group select {
+  padding: 12px 16px;
+  background: rgba(255, 255, 255, 0.1);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  border-radius: 8px;
+  color: white;
+  font-size: 14px;
+  transition: all 0.3s ease;
 }
 
-.gateway-options,
-.metodo-options {
-  display: flex;
-  gap: var(--spacing-md);
-  margin-top: var(--spacing-sm);
+.form-group input:focus,
+.form-group select:focus {
+  outline: none;
+  border-color: #007aff;
+  background: rgba(255, 255, 255, 0.15);
+  box-shadow: 0 0 20px rgba(0, 122, 255, 0.3);
 }
 
-.gateway-option,
-.metodo-option {
+.form-group input::placeholder {
+  color: rgba(255, 255, 255, 0.5);
+}
+
+.form-group select option {
+  background: #1a1a1a;
+  color: white;
+}
+
+.checkout-sidebar {
+  position: sticky;
+  top: 24px;
+  height: fit-content;
+}
+
+.cart-summary {
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 16px;
+  padding: 24px;
+  backdrop-filter: blur(10px);
+}
+
+.cart-summary h2 {
+  font-size: 20px;
+  font-weight: 600;
+  color: white;
+  margin: 0 0 24px 0;
+}
+
+.cart-items {
+  margin-bottom: 24px;
+}
+
+.cart-item {
   display: flex;
   align-items: center;
-  gap: var(--spacing-xs);
+  gap: 12px;
+  padding: 12px 0;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.cart-item:last-child {
+  border-bottom: none;
+}
+
+.item-image {
+  width: 60px;
+  height: 60px;
+  border-radius: 8px;
+  object-fit: cover;
+}
+
+.item-info {
+  flex: 1;
+}
+
+.item-name {
+  font-size: 14px;
+  font-weight: 600;
+  color: white;
+  margin: 0 0 4px 0;
+}
+
+.item-price {
+  font-size: 12px;
+  color: rgba(255, 255, 255, 0.7);
+}
+
+.item-quantity {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.btn-quantity {
+  width: 24px;
+  height: 24px;
+  background: rgba(255, 255, 255, 0.1);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  border-radius: 4px;
+  color: white;
+  font-size: 14px;
   cursor: pointer;
+  transition: all 0.3s ease;
 }
 
-.gateway-option.disabled {
-  color: var(--text-secondary);
-  cursor: not-allowed;
+.btn-quantity:hover {
+  background: rgba(255, 255, 255, 0.2);
 }
 
-.cartao-form {
-  margin-top: var(--spacing-lg);
-}
-
-.pagamento-actions {
-  margin-top: var(--spacing-xl);
+.quantity {
+  font-size: 14px;
+  color: white;
+  font-weight: 600;
+  min-width: 20px;
   text-align: center;
 }
 
-.btn-large {
-  padding: var(--spacing-md) var(--spacing-xl);
-  font-size: 1.125rem;
+.btn-remove {
+  background: none;
+  border: none;
+  color: rgba(255, 255, 255, 0.6);
+  font-size: 16px;
+  cursor: pointer;
+  padding: 4px;
+  border-radius: 4px;
+  transition: all 0.3s ease;
+}
+
+.btn-remove:hover {
+  color: #f44336;
+  background: rgba(244, 67, 54, 0.1);
+}
+
+.cart-totals {
+  margin-bottom: 24px;
+}
+
+.total-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 8px 0;
+  font-size: 14px;
+  color: rgba(255, 255, 255, 0.8);
+}
+
+.total-final {
+  font-size: 18px;
+  font-weight: 700;
+  color: white;
+  border-top: 1px solid rgba(255, 255, 255, 0.1);
+  padding-top: 16px;
+  margin-top: 8px;
+}
+
+.btn-checkout {
+  width: 100%;
+  padding: 16px 24px;
+  background: linear-gradient(135deg, #007aff, #0056cc);
+  color: white;
+  border: none;
+  border-radius: 8px;
+  font-size: 16px;
   font-weight: 600;
+  cursor: pointer;
+  transition: all 0.3s ease;
+}
+
+.btn-checkout:hover {
+  background: linear-gradient(135deg, #0056cc, #004499);
+  transform: translateY(-2px);
+  box-shadow: 0 8px 25px rgba(0, 122, 255, 0.4);
 }
 
 .modal-overlay {
@@ -595,51 +566,54 @@ const limparCarrinho = () => {
   left: 0;
   right: 0;
   bottom: 0;
-  background-color: rgba(0, 0, 0, 0.5);
+  background: rgba(0, 0, 0, 0.8);
   display: flex;
   align-items: center;
   justify-content: center;
-  z-index: 100;
+  z-index: 1000;
+  backdrop-filter: blur(5px);
 }
 
 .modal-content {
+  background: linear-gradient(135deg, rgba(255, 255, 255, 0.1), rgba(255, 255, 255, 0.05));
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  border-radius: 16px;
   width: 90%;
   max-width: 500px;
-  max-height: 90vh;
-  overflow-y: auto;
-  padding: 0;
+  backdrop-filter: blur(20px);
 }
 
 .modal-header {
-  padding: var(--spacing-lg);
-  padding-bottom: var(--spacing-md);
-  border-bottom: 1px solid var(--border-color);
+  padding: 24px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
 }
 
 .modal-header h2 {
-  color: var(--text-primary);
-  font-size: 1.5rem;
+  font-size: 20px;
+  font-weight: 600;
+  color: white;
   margin: 0;
-  text-align: center;
 }
 
 .modal-body {
-  padding: var(--spacing-lg);
-}
-
-.processing {
+  padding: 32px 24px;
   text-align: center;
-  padding: var(--spacing-xl);
 }
 
-.spinner {
-  width: 50px;
-  height: 50px;
-  border: 4px solid var(--border-color);
-  border-top: 4px solid var(--primary);
+.processing-state {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 16px;
+}
+
+.loading-spinner {
+  width: 48px;
+  height: 48px;
+  border: 4px solid rgba(255, 255, 255, 0.1);
+  border-top: 4px solid #007aff;
   border-radius: 50%;
   animation: spin 1s linear infinite;
-  margin: 0 auto var(--spacing-lg);
 }
 
 @keyframes spin {
@@ -651,79 +625,105 @@ const limparCarrinho = () => {
   }
 }
 
-.processing-details {
-  color: var(--text-secondary);
-  font-size: 0.875rem;
-  margin-top: var(--spacing-md);
-  line-height: 1.5;
+.processing-status {
+  font-size: 16px;
+  color: rgba(255, 255, 255, 0.8);
+  margin: 0;
 }
 
-.payment-result {
-  text-align: center;
-  padding: var(--spacing-xl);
+.result-state {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 16px;
 }
 
 .result-icon {
-  font-size: 3rem;
-  margin-bottom: var(--spacing-lg);
+  font-size: 48px;
 }
 
-.success-result h3 {
-  color: var(--success);
-  margin-bottom: var(--spacing-lg);
-  font-size: 1.5rem;
+.result-icon.success {
+  color: #4caf50;
+}
+
+.result-icon.error {
+  color: #f44336;
+}
+
+.result-title {
+  font-size: 20px;
   font-weight: 600;
+  color: white;
+  margin: 0;
 }
 
-.error-result h3 {
-  color: var(--error);
-  margin-bottom: var(--spacing-lg);
-  font-size: 1.5rem;
-  font-weight: 600;
-}
-
-.result-details {
-  text-align: left;
-  background-color: var(--bg-secondary);
-  padding: var(--spacing-lg);
-  border-radius: var(--border-radius-sm);
-  margin-top: var(--spacing-lg);
-  border: 1px solid var(--border-color);
-}
-
-.result-details p {
-  margin: var(--spacing-sm) 0;
-  color: var(--text-primary);
+.result-message {
+  font-size: 14px;
+  color: rgba(255, 255, 255, 0.8);
+  margin: 0;
   line-height: 1.5;
 }
 
+.result-code {
+  font-size: 12px;
+  color: rgba(255, 255, 255, 0.6);
+  background: rgba(255, 255, 255, 0.1);
+  padding: 8px 16px;
+  border-radius: 8px;
+  font-family: monospace;
+}
+
 .modal-footer {
-  display: flex;
-  justify-content: center;
-  gap: var(--spacing-md);
-  padding: var(--spacing-lg);
-  padding-top: var(--spacing-md);
-  border-top: 1px solid var(--border-color);
-  background: var(--bg-secondary);
+  padding: 24px;
+  border-top: 1px solid rgba(255, 255, 255, 0.1);
+  text-align: center;
+}
+
+.btn-close {
+  padding: 12px 24px;
+  background: transparent;
+  color: rgba(255, 255, 255, 0.7);
+  border: 1px solid rgba(255, 255, 255, 0.3);
+  border-radius: 8px;
+  font-size: 14px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.3s ease;
+}
+
+.btn-close:hover {
+  background: rgba(255, 255, 255, 0.1);
+  color: white;
+  border-color: rgba(255, 255, 255, 0.5);
+}
+
+@media (max-width: 1024px) {
+  .checkout-content {
+    grid-template-columns: 1fr;
+  }
+
+  .checkout-sidebar {
+    position: static;
+  }
 }
 
 @media (max-width: 768px) {
-  .checkout-grid {
-    grid-template-columns: 1fr;
+  .checkout-container {
+    padding: 16px;
   }
 
   .form-grid {
     grid-template-columns: 1fr;
   }
 
-  .gateway-options,
-  .metodo-options {
+  .cart-item {
     flex-direction: column;
+    align-items: flex-start;
+    gap: 8px;
   }
 
-  .produto-item {
-    flex-direction: column;
-    text-align: center;
+  .item-quantity {
+    align-self: flex-end;
   }
 }
 </style>

@@ -41,6 +41,8 @@ const handleResize = () => {
 }
 
 const logout = () => {
+  localStorage.removeItem('isAuthenticated')
+  localStorage.removeItem('userEmail')
   router.push({ name: 'login' })
   activeRoute.value = 'login'
   if (isMobile.value) {
@@ -81,7 +83,7 @@ onUnmounted(() => {
 
           <!-- Subseções para Configurações -->
           <div
-            v-if="item.subItems && isOpen && activeRoute.startsWith('configuracoes')"
+            v-if="item.subItems && isOpen && typeof activeRoute === 'string' && activeRoute.startsWith('configuracoes')"
             class="sub-nav"
           >
             <button

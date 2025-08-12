@@ -11,7 +11,7 @@
 </template>
 
 <script setup>
-import { ref } from 'vue'
+
 import Sidebar from './Sidebar.vue'
 import Navbar from '../Navbar.vue'
 import { useSidebarStore } from '@/stores/sidebarStore'

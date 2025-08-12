@@ -2,6 +2,8 @@
 
 skinparam backgroundColor #FFFFFF
 skinparam actorStyle awesome
+
+' Definição de cores por fase
 skinparam usecase {
     BackgroundColor #E8F4FD
     BorderColor #0066CC
@@ -17,22 +19,26 @@ actor "Gateway de Pagamento" as GP #00CC66
 
 ' Definição do sistema
 rectangle "Middleware Multigateways de Pagamento" {
-    ' Casos de uso do Sistema Cliente
-    usecase "Enviar requisição de pagamento" as UC1
-    usecase "Consultar status da transação" as UC2
-    usecase "Receber resposta padronizada" as UC3
-    usecase "Receber fallback automático" as UC4
+    ' FASE 1 - Autenticação e Configuração Básica (Azul)
+    usecase "Cadastrar novo gateway" as UC5 #87CEEB
+    usecase "Configurar ambiente sandbox" as UC8 #87CEEB
     
-    ' Casos de uso do Administrador do Sistema
-    usecase "Cadastrar novo gateway" as UC5
-    usecase "Definir regras de prioridade e fallback" as UC6
-    usecase "Visualizar logs e histórico de requisições" as UC7
-    usecase "Configurar ambiente sandbox" as UC8
+    ' FASE 2 - Gestão de Usuários e Dashboard (Verde)
+    usecase "Visualizar logs e histórico de requisições" as UC7 #90EE90
+    usecase "Definir regras de prioridade e fallback" as UC6 #90EE90
     
-    ' Casos de uso do Gateway de Pagamento
-    usecase "Receber requisição formatada" as UC9
-    usecase "Retornar status de pagamento" as UC10
-    usecase "Simular falha para fallback" as UC11
+    ' FASE 3 - Integração com Gateways (Laranja)
+    usecase "Enviar requisição de pagamento" as UC1 #FFB347
+    usecase "Receber requisição formatada" as UC9 #FFB347
+    usecase "Retornar status de pagamento" as UC10 #FFB347
+    
+    ' FASE 4 - Processamento e Resposta (Vermelho)
+    usecase "Consultar status da transação" as UC2 #FF6B6B
+    usecase "Receber resposta padronizada" as UC3 #FF6B6B
+    usecase "Receber fallback automático" as UC4 #FF6B6B
+    
+    ' FASE 5 - Testes e Simulação (Roxo)
+    usecase "Simular falha para fallback" as UC11 #DDA0DD
 }
 
 ' Relacionamentos do Sistema Cliente
@@ -59,6 +65,16 @@ UC1 --> UC9 : <<include>>
 UC2 --> UC10 : <<include>>
 UC5 --> UC6 : <<extend>>
 UC7 --> UC8 : <<extend>>
+
+' Legenda das fases
+legend right
+  |= Fase |= Cor |= Descrição |
+  | 1 | <#87CEEB>   </#87CEEB> | Autenticação e Configuração |
+  | 2 | <#90EE90>   </#90EE90> | Gestão de Usuários |
+  | 3 | <#FFB347>   </#FFB347> | Integração Gateways |
+  | 4 | <#FF6B6B>   </#FF6B6B> | Processamento |
+  | 5 | <#DDA0DD>   </#DDA0DD> | Testes e Simulação |
+endlegend
 
 ' Notas técnicas
 note right of UC1

@@ -4,96 +4,95 @@ import { ref, computed } from 'vue'
 const produtos = ref([
   {
     id: 1,
-    nome: 'Smartphone Galaxy S23',
-    preco: 2999.99,
-    precoOriginal: 3499.99,
-    descricao: 'Smartphone Samsung Galaxy S23 com 128GB, 8GB RAM, câmera tripla e tela 6.1"',
-    categoria: 'Eletrônicos',
-    estoque: 15,
+    nome: 'iPhone 15 Pro',
+    descricao: 'Smartphone Apple com chip A17 Pro, câmera tripla e design em titânio',
+    categoria: 'Smartphones',
+    preco: 8999.99,
+    estoque: 45,
+    vendas: 156,
     status: 'Ativo',
     imagem: '/src/assets/photos/s3.png',
-    vendas: 45,
-    avaliacao: 4.8,
   },
   {
     id: 2,
-    nome: 'Fones de Ouvido Wireless',
-    preco: 299.99,
-    precoOriginal: 399.99,
-    descricao: 'Fones de ouvido bluetooth com cancelamento de ruído e bateria de 30h',
-    categoria: 'Eletrônicos',
-    estoque: 8,
+    nome: 'MacBook Air M2',
+    descricao: 'Notebook Apple com chip M2, 13.6" Retina e até 18h de bateria',
+    categoria: 'Notebooks',
+    preco: 9999.99,
+    estoque: 23,
+    vendas: 89,
     status: 'Ativo',
-    imagem: '/src/assets/photos/fone.png',
-    vendas: 32,
-    avaliacao: 4.6,
+    imagem: '/src/assets/photos/tenis.png',
   },
   {
     id: 3,
-    nome: 'Smart TV 55" 4K',
-    preco: 2499.99,
-    precoOriginal: 2999.99,
-    descricao: 'Smart TV Samsung 55" 4K Ultra HD com HDR e Android TV',
-    categoria: 'Eletrônicos',
-    estoque: 3,
+    nome: 'Samsung Galaxy S24',
+    descricao: 'Smartphone Samsung com IA integrada, câmera de 200MP e S Pen',
+    categoria: 'Smartphones',
+    preco: 6999.99,
+    estoque: 67,
+    vendas: 134,
     status: 'Ativo',
     imagem: '/src/assets/photos/tv.png',
-    vendas: 18,
-    avaliacao: 4.9,
   },
   {
     id: 4,
-    nome: 'Tênis Esportivo',
-    preco: 199.99,
-    precoOriginal: 249.99,
-    descricao: 'Tênis esportivo para corrida com amortecimento e respirabilidade',
-    categoria: 'Esportes',
-    estoque: 0,
-    status: 'Esgotado',
-    imagem: '/src/assets/photos/tenis.png',
+    nome: 'iPad Pro 12.9"',
+    descricao: 'Tablet Apple com chip M2, 12.9" Liquid Retina XDR e Apple Pencil',
+    categoria: 'Tablets',
+    preco: 8999.99,
+    estoque: 12,
     vendas: 67,
-    avaliacao: 4.7,
+    status: 'Ativo',
+    imagem: '/src/assets/photos/fone.png',
   },
   {
     id: 5,
-    nome: 'Capa Protetora Premium',
-    preco: 89.99,
-    precoOriginal: 89.99,
-    descricao: 'Capa protetora premium para smartphone com proteção militar',
+    nome: 'AirPods Pro',
+    descricao: 'Fones de ouvido Apple com cancelamento de ruído ativo e áudio espacial',
     categoria: 'Acessórios',
-    estoque: 25,
+    preco: 2499.99,
+    estoque: 89,
+    vendas: 234,
     status: 'Ativo',
     imagem: '/src/assets/photos/capa de celular.png',
-    vendas: 89,
-    avaliacao: 4.5,
+  },
+  {
+    id: 6,
+    nome: 'Dell XPS 13',
+    descricao: 'Notebook Dell com Intel Core i7, 13.4" InfinityEdge e design premium',
+    categoria: 'Notebooks',
+    preco: 7999.99,
+    estoque: 8,
+    vendas: 45,
+    status: 'Esgotado',
+    imagem: '/src/assets/photos/s3.png',
   },
 ])
-
-const categorias = ref(['Todos', 'Eletrônicos', 'Esportes', 'Acessórios', 'Casa', 'Vestuário'])
-const statusOptions = ref(['Todos', 'Ativo', 'Inativo', 'Esgotado'])
 
 const showModal = ref(false)
 const editingProduct = ref(null)
 const searchTerm = ref('')
-const selectedCategory = ref('Todos')
+const selectedCategoria = ref('Todas')
 const selectedStatus = ref('Todos')
 const sortBy = ref('nome')
 
 const novoProduto = ref({
   nome: '',
-  preco: '',
-  precoOriginal: '',
   descricao: '',
-  categoria: 'Eletrônicos',
+  categoria: 'Smartphones',
+  preco: 0,
   estoque: 0,
   status: 'Ativo',
-  imagem: 'https://via.placeholder.com/300x300/0066CC/FFFFFF?text=📦',
+  imagem: '/src/assets/photos/s3.png',
 })
+
+const categoriaOptions = ref(['Todas', 'Smartphones', 'Notebooks', 'Tablets', 'Acessórios', 'Smart TVs'])
+const statusOptions = ref(['Todos', 'Ativo', 'Esgotado'])
 
 const produtosFiltrados = computed(() => {
   let filtered = produtos.value
 
-  // Filtro por busca
   if (searchTerm.value) {
     filtered = filtered.filter(
       (produto) =>
@@ -102,34 +101,104 @@ const produtosFiltrados = computed(() => {
     )
   }
 
-  // Filtro por categoria
-  if (selectedCategory.value !== 'Todos') {
-    filtered = filtered.filter((produto) => produto.categoria === selectedCategory.value)
+  if (selectedCategoria.value !== 'Todas') {
+    filtered = filtered.filter((produto) => produto.categoria === selectedCategoria.value)
   }
 
-  // Filtro por status
   if (selectedStatus.value !== 'Todos') {
     filtered = filtered.filter((produto) => produto.status === selectedStatus.value)
   }
 
-  // Ordenação
-  filtered.sort((a, b) => {
-    switch (sortBy.value) {
-      case 'nome':
-        return a.nome.localeCompare(b.nome)
-      case 'preco':
-        return a.preco - b.preco
-      case 'vendas':
-        return b.vendas - a.vendas
-      case 'estoque':
-        return b.estoque - a.estoque
-      default:
-        return 0
-    }
-  })
+  if (sortBy.value === 'nome') {
+    filtered.sort((a, b) => a.nome.localeCompare(b.nome))
+  } else if (sortBy.value === 'preco') {
+    filtered.sort((a, b) => a.preco - b.preco)
+  } else if (sortBy.value === 'vendas') {
+    filtered.sort((a, b) => b.vendas - a.vendas)
+  }
 
   return filtered
 })
+
+const estatisticas = computed(() => {
+  const total = produtos.value.length
+  const ativos = produtos.value.filter((p) => p.status === 'Ativo').length
+  const esgotados = produtos.value.filter((p) => p.status === 'Esgotado').length
+  const totalVendas = produtos.value.reduce((sum, p) => sum + p.vendas, 0)
+  const mediaPreco = produtos.value.reduce((sum, p) => sum + p.preco, 0) / total
+
+  return {
+    total,
+    ativos,
+    esgotados,
+    totalVendas,
+    mediaPreco: Math.round(mediaPreco * 100) / 100,
+  }
+})
+
+const openModal = (produto = null) => {
+  editingProduct.value = produto
+  if (produto) {
+    novoProduto.value = { ...produto }
+  } else {
+    novoProduto.value = {
+      nome: '',
+      descricao: '',
+      categoria: 'Smartphones',
+      preco: 0,
+      estoque: 0,
+      status: 'Ativo',
+      imagem: '/src/assets/photos/s3.png',
+    }
+  }
+  showModal.value = true
+}
+
+const closeModal = () => {
+  showModal.value = false
+  editingProduct.value = null
+}
+
+const saveProduct = () => {
+  if (editingProduct.value) {
+    const index = produtos.value.findIndex((p) => p.id === editingProduct.value.id)
+    produtos.value[index] = { ...novoProduto.value, id: editingProduct.value.id }
+  } else {
+    const newId = Math.max(...produtos.value.map((p) => p.id)) + 1
+    produtos.value.push({
+      ...novoProduto.value,
+      id: newId,
+      vendas: 0,
+    })
+  }
+  closeModal()
+}
+
+const deleteProduct = (id) => {
+  produtos.value = produtos.value.filter((p) => p.id !== id)
+}
+
+const getStatusColor = (status) => {
+  switch (status) {
+    case 'Ativo':
+      return '#4CAF50'
+    case 'Esgotado':
+      return '#F44336'
+    default:
+      return '#9E9E9E'
+  }
+}
+
+const getStatusBgColor = (status) => {
+  switch (status) {
+    case 'Ativo':
+      return 'rgba(76, 175, 80, 0.1)'
+    case 'Esgotado':
+      return 'rgba(244, 67, 54, 0.1)'
+    default:
+      return 'rgba(158, 158, 158, 0.1)'
+  }
+}
 
 const formatarMoeda = (valor) => {
   return valor.toLocaleString('pt-BR', {
@@ -137,254 +206,194 @@ const formatarMoeda = (valor) => {
     currency: 'BRL',
   })
 }
-
-const abrirModal = (produto = null) => {
-  if (produto) {
-    editingProduct.value = produto
-    novoProduto.value = { ...produto }
-  } else {
-    editingProduct.value = null
-    novoProduto.value = {
-      nome: '',
-      preco: '',
-      precoOriginal: '',
-      descricao: '',
-      categoria: 'Eletrônicos',
-      estoque: 0,
-      status: 'Ativo',
-      imagem: 'https://via.placeholder.com/300x300/0066CC/FFFFFF?text=📦',
-    }
-  }
-  showModal.value = true
-}
-
-const fecharModal = () => {
-  showModal.value = false
-  editingProduct.value = null
-}
-
-const salvarProduto = () => {
-  if (!novoProduto.value.nome || !novoProduto.value.preco) {
-    alert('Por favor, preencha os campos obrigatórios')
-    return
-  }
-
-  if (editingProduct.value) {
-    // Editar produto existente
-    const index = produtos.value.findIndex((p) => p.id === editingProduct.value.id)
-    if (index !== -1) {
-      produtos.value[index] = { ...novoProduto.value, id: editingProduct.value.id }
-    }
-  } else {
-    // Adicionar novo produto
-    const novoId = Math.max(...produtos.value.map((p) => p.id)) + 1
-    produtos.value.push({
-      ...novoProduto.value,
-      id: novoId,
-      vendas: 0,
-      avaliacao: 0,
-    })
-  }
-
-  fecharModal()
-}
-
-const excluirProduto = (id) => {
-  if (confirm('Tem certeza que deseja excluir este produto?')) {
-    produtos.value = produtos.value.filter((p) => p.id !== id)
-  }
-}
-
-const toggleStatus = (produto) => {
-  produto.status = produto.status === 'Ativo' ? 'Inativo' : 'Ativo'
-}
 </script>
 
 <template>
   <div class="produtos-container">
-    <div class="page-header">
-      <div class="header-content">
-        <h1>Gerenciar Produtos</h1>
-        <p class="subtitle">Gerencie o catálogo de produtos do ConectaAI</p>
-      </div>
-      <button @click="abrirModal()" class="btn btn-primary">
-        <span>+</span>
-        Novo Produto
-      </button>
-    </div>
-
-    <!-- Filtros e Busca -->
-    <div class="filtros-section card">
-      <div class="filtros-header">
-        <h3>Filtros e Busca</h3>
-        <span class="resultados">{{ produtosFiltrados.length }} produtos encontrados</span>
+    <div class="stats-grid">
+      <div class="stat-card">
+        <div class="stat-icon">📦</div>
+        <div class="stat-content">
+          <h3>Total de Produtos</h3>
+          <div class="stat-value">{{ estatisticas.total }}</div>
+          <div class="stat-subtitle">Cadastrados</div>
+        </div>
       </div>
 
-      <div class="filtros-grid">
-        <div class="filtro-item">
-          <label>Buscar</label>
-          <input
-            v-model="searchTerm"
-            type="text"
-            class="input"
-            placeholder="Buscar por nome ou descrição..."
-          />
+      <div class="stat-card">
+        <div class="stat-icon">✅</div>
+        <div class="stat-content">
+          <h3>Produtos Ativos</h3>
+          <div class="stat-value">{{ estatisticas.ativos }}</div>
+          <div class="stat-subtitle">Disponíveis</div>
         </div>
+      </div>
 
-        <div class="filtro-item">
-          <label>Categoria</label>
-          <select v-model="selectedCategory" class="input">
-            <option v-for="categoria in categorias" :key="categoria" :value="categoria">
-              {{ categoria }}
-            </option>
-          </select>
+      <div class="stat-card">
+        <div class="stat-icon">📊</div>
+        <div class="stat-content">
+          <h3>Total de Vendas</h3>
+          <div class="stat-value">{{ estatisticas.totalVendas.toLocaleString('pt-BR') }}</div>
+          <div class="stat-subtitle">Unidades vendidas</div>
         </div>
+      </div>
 
-        <div class="filtro-item">
-          <label>Status</label>
-          <select v-model="selectedStatus" class="input">
-            <option v-for="status in statusOptions" :key="status" :value="status">
-              {{ status }}
-            </option>
-          </select>
-        </div>
-
-        <div class="filtro-item">
-          <label>Ordenar por</label>
-          <select v-model="sortBy" class="input">
-            <option value="nome">Nome</option>
-            <option value="preco">Preço</option>
-            <option value="vendas">Vendas</option>
-            <option value="estoque">Estoque</option>
-          </select>
+      <div class="stat-card">
+        <div class="stat-icon">💰</div>
+        <div class="stat-content">
+          <h3>Preço Médio</h3>
+          <div class="stat-value">{{ formatarMoeda(estatisticas.mediaPreco) }}</div>
+          <div class="stat-subtitle">Por produto</div>
         </div>
       </div>
     </div>
 
-    <!-- Lista de Produtos -->
-    <div class="produtos-grid">
-      <div v-for="produto in produtosFiltrados" :key="produto.id" class="produto-card card">
-        <div class="produto-imagem">
+    <div class="filters-section">
+      <div class="search-box">
+        <input
+          v-model="searchTerm"
+          type="text"
+          placeholder="Buscar produtos..."
+          class="search-input"
+        />
+        <span class="search-icon">🔍</span>
+      </div>
+
+      <div class="filters-row">
+        <select v-model="selectedCategoria" class="filter-select">
+          <option v-for="categoria in categoriaOptions" :key="categoria" :value="categoria">
+            {{ categoria }}
+          </option>
+        </select>
+
+        <select v-model="selectedStatus" class="filter-select">
+          <option v-for="status in statusOptions" :key="status" :value="status">
+            {{ status }}
+          </option>
+        </select>
+
+        <select v-model="sortBy" class="filter-select">
+          <option value="nome">Ordenar por Nome</option>
+          <option value="preco">Ordenar por Preço</option>
+          <option value="vendas">Ordenar por Vendas</option>
+        </select>
+
+        <button @click="openModal()" class="btn-primary">
+          <span>➕</span>
+          Adicionar Produto
+        </button>
+      </div>
+    </div>
+
+    <div class="products-grid">
+      <div v-for="produto in produtosFiltrados" :key="produto.id" class="product-card">
+        <div class="product-image">
           <img :src="produto.imagem" :alt="produto.nome" />
-          <div class="produto-status" :class="produto.status.toLowerCase()">
-            {{ produto.status }}
-          </div>
-          <div class="produto-acoes">
-            <button @click="abrirModal(produto)" class="btn-acao" title="Editar">✏️</button>
-            <button @click="excluirProduto(produto.id)" class="btn-acao" title="Excluir">🗑️</button>
-          </div>
         </div>
 
-        <div class="produto-info">
-          <h3 class="produto-nome">{{ produto.nome }}</h3>
-          <p class="produto-descricao">{{ produto.descricao }}</p>
+        <div class="product-info">
+          <h3 class="product-name">{{ produto.nome }}</h3>
+          <p class="product-description">{{ produto.descricao }}</p>
 
-          <div class="produto-categoria">
-            <span class="categoria-tag">{{ produto.categoria }}</span>
-          </div>
-
-          <div class="produto-precos">
-            <span class="preco-atual">{{ formatarMoeda(produto.preco) }}</span>
-            <span v-if="produto.precoOriginal > produto.preco" class="preco-original">
-              {{ formatarMoeda(produto.precoOriginal) }}
+          <div class="product-meta">
+            <span class="product-category">{{ produto.categoria }}</span>
+            <span
+              class="product-status"
+              :style="{
+                color: getStatusColor(produto.status),
+                backgroundColor: getStatusBgColor(produto.status),
+              }"
+            >
+              {{ produto.status }}
             </span>
           </div>
 
-          <div class="produto-stats">
+          <div class="product-stats">
+            <div class="stat-item">
+              <span class="stat-label">Preço:</span>
+              <span class="stat-value">{{ formatarMoeda(produto.preco) }}</span>
+            </div>
+
             <div class="stat-item">
               <span class="stat-label">Estoque:</span>
-              <span class="stat-value" :class="{ 'estoque-baixo': produto.estoque < 5 }">
-                {{ produto.estoque }}
+              <span class="stat-value" :class="{ 'low-stock': produto.estoque < 10 }">
+                {{ produto.estoque }} unidades
               </span>
             </div>
+
             <div class="stat-item">
               <span class="stat-label">Vendas:</span>
-              <span class="stat-value">{{ produto.vendas }}</span>
-            </div>
-            <div class="stat-item">
-              <span class="stat-label">Avaliação:</span>
-              <span class="stat-value">⭐ {{ produto.avaliacao }}</span>
+              <span class="stat-value">{{ produto.vendas.toLocaleString('pt-BR') }}</span>
             </div>
           </div>
 
-          <div class="produto-actions">
-            <button @click="toggleStatus(produto)" class="btn btn-secondary">
-              {{ produto.status === 'Ativo' ? 'Desativar' : 'Ativar' }}
-            </button>
-            <button class="btn btn-primary">Ver Detalhes</button>
+          <div class="product-actions">
+            <button @click="openModal(produto)" class="btn-edit">✏️</button>
+            <button @click="deleteProduct(produto.id)" class="btn-delete">🗑️</button>
           </div>
         </div>
       </div>
     </div>
 
-    <!-- Modal de Produto -->
-    <div v-if="showModal" class="modal-overlay" @click="fecharModal">
-      <div class="modal-content card" @click.stop>
+    <div v-if="showModal" class="modal-overlay" @click="closeModal">
+      <div class="modal-content" @click.stop>
         <div class="modal-header">
-          <h2>{{ editingProduct ? 'Editar Produto' : 'Novo Produto' }}</h2>
-          <button @click="fecharModal" class="btn-close">×</button>
+          <h2>{{ editingProduct ? 'Editar Produto' : 'Adicionar Produto' }}</h2>
+          <button @click="closeModal" class="btn-close">✕</button>
         </div>
 
-        <form @submit.prevent="salvarProduto" class="modal-body">
+        <div class="modal-body">
           <div class="form-grid">
             <div class="form-group">
               <label>Nome do Produto *</label>
-              <input v-model="novoProduto.nome" type="text" class="input" required />
+              <input v-model="novoProduto.nome" type="text" required />
             </div>
 
             <div class="form-group">
-              <label>Categoria</label>
-              <select v-model="novoProduto.categoria" class="input">
-                <option value="Eletrônicos">Eletrônicos</option>
-                <option value="Esportes">Esportes</option>
+              <label>Categoria *</label>
+              <select v-model="novoProduto.categoria" required>
+                <option value="Smartphones">Smartphones</option>
+                <option value="Notebooks">Notebooks</option>
+                <option value="Tablets">Tablets</option>
                 <option value="Acessórios">Acessórios</option>
-                <option value="Casa">Casa</option>
-                <option value="Vestuário">Vestuário</option>
+                <option value="Smart TVs">Smart TVs</option>
               </select>
             </div>
 
             <div class="form-group">
-              <label>Preço Atual *</label>
-              <input v-model="novoProduto.preco" type="number" step="0.01" class="input" required />
+              <label>Preço (R$) *</label>
+              <input v-model="novoProduto.preco" type="number" step="0.01" min="0" required />
             </div>
 
             <div class="form-group">
-              <label>Preço Original</label>
-              <input v-model="novoProduto.precoOriginal" type="number" step="0.01" class="input" />
-            </div>
-
-            <div class="form-group">
-              <label>Estoque</label>
-              <input v-model="novoProduto.estoque" type="number" class="input" />
+              <label>Estoque *</label>
+              <input v-model="novoProduto.estoque" type="number" min="0" required />
             </div>
 
             <div class="form-group">
               <label>Status</label>
-              <select v-model="novoProduto.status" class="input">
+              <select v-model="novoProduto.status">
                 <option value="Ativo">Ativo</option>
-                <option value="Inativo">Inativo</option>
                 <option value="Esgotado">Esgotado</option>
               </select>
             </div>
 
-            <div class="form-group full-width">
-              <label>Descrição</label>
-              <textarea v-model="novoProduto.descricao" class="input" rows="4"></textarea>
-            </div>
-
-            <div class="form-group full-width">
+            <div class="form-group">
               <label>URL da Imagem</label>
-              <input v-model="novoProduto.imagem" type="url" class="input" />
+              <input v-model="novoProduto.imagem" type="url" />
+            </div>
+
+            <div class="form-group full-width">
+              <label>Descrição *</label>
+              <textarea v-model="novoProduto.descricao" rows="3" required></textarea>
             </div>
           </div>
+        </div>
 
-          <div class="modal-footer">
-            <button type="button" @click="fecharModal" class="btn btn-secondary">Cancelar</button>
-            <button type="submit" class="btn btn-primary">
-              {{ editingProduct ? 'Atualizar' : 'Cadastrar' }}
-            </button>
-          </div>
-        </form>
+        <div class="modal-footer">
+          <button @click="closeModal" class="btn-secondary">Cancelar</button>
+          <button @click="saveProduct" class="btn-primary">Salvar</button>
+        </div>
       </div>
     </div>
   </div>
@@ -392,235 +401,297 @@ const toggleStatus = (produto) => {
 
 <style scoped>
 .produtos-container {
-  padding: var(--spacing-lg);
+  padding: 24px;
+  max-width: 1400px;
+  margin: 0 auto;
 }
 
-.page-header {
+.stats-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+  gap: 20px;
+  margin-bottom: 32px;
+}
+
+.stat-card {
+  background: linear-gradient(135deg, rgba(255, 255, 255, 0.1), rgba(255, 255, 255, 0.05));
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 16px;
+  padding: 24px;
   display: flex;
-  justify-content: space-between;
-  align-items: flex-start;
-  margin-bottom: var(--spacing-lg);
-}
-
-.header-content h1 {
-  color: var(--text-primary);
-  font-size: 1.75rem;
-  font-weight: 600;
-  margin-bottom: var(--spacing-xs);
-}
-
-.subtitle {
-  color: var(--text-secondary);
-  font-size: 1rem;
-}
-
-.filtros-section {
-  margin-bottom: var(--spacing-lg);
-  padding: var(--spacing-lg);
-}
-
-.filtros-header {
-  display: flex;
-  justify-content: space-between;
   align-items: center;
-  margin-bottom: var(--spacing-lg);
+  gap: 16px;
+  backdrop-filter: blur(10px);
+  transition: all 0.3s ease;
 }
 
-.filtros-header h3 {
-  color: var(--text-primary);
-  font-size: 1.25rem;
-  margin: 0;
-}
-
-.resultados {
-  color: var(--text-secondary);
-  font-size: 0.875rem;
-}
-
-.filtros-grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-  gap: var(--spacing-md);
-}
-
-.filtro-item {
-  display: flex;
-  flex-direction: column;
-  gap: var(--spacing-xs);
-}
-
-.filtro-item label {
-  color: var(--text-primary);
-  font-size: 0.875rem;
-  font-weight: 500;
-}
-
-.produtos-grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(350px, 1fr));
-  gap: var(--spacing-lg);
-}
-
-.produto-card {
-  overflow: hidden;
-  transition:
-    transform 0.2s ease,
-    box-shadow 0.2s ease;
-}
-
-.produto-card:hover {
+.stat-card:hover {
   transform: translateY(-2px);
-  box-shadow: 0 8px 25px rgba(0, 0, 0, 0.15);
+  box-shadow: 0 8px 25px rgba(0, 0, 0, 0.2);
 }
 
-.produto-imagem {
-  position: relative;
-  height: 200px;
-  overflow: hidden;
-}
-
-.produto-imagem img {
-  width: 100%;
-  height: 100%;
-  object-fit: cover;
-}
-
-.produto-status {
-  position: absolute;
-  top: var(--spacing-sm);
-  left: var(--spacing-sm);
-  padding: var(--spacing-xs) var(--spacing-sm);
-  border-radius: var(--border-radius-lg);
-  font-size: 0.75rem;
-  font-weight: 500;
-  color: white;
-}
-
-.produto-status.ativo {
-  background-color: var(--success);
-}
-
-.produto-status.inativo {
-  background-color: var(--text-secondary);
-}
-
-.produto-status.esgotado {
-  background-color: var(--error);
-}
-
-.produto-acoes {
-  position: absolute;
-  top: var(--spacing-sm);
-  right: var(--spacing-sm);
-  display: flex;
-  gap: var(--spacing-xs);
-}
-
-.btn-acao {
-  width: 32px;
-  height: 32px;
-  border: none;
-  border-radius: var(--border-radius-sm);
-  background: rgba(0, 0, 0, 0.7);
-  color: white;
-  cursor: pointer;
+.stat-icon {
+  font-size: 32px;
+  width: 60px;
+  height: 60px;
   display: flex;
   align-items: center;
   justify-content: center;
-  font-size: 0.875rem;
-  transition: background 0.2s ease;
+  background: rgba(255, 255, 255, 0.1);
+  border-radius: 12px;
 }
 
-.btn-acao:hover {
-  background: rgba(0, 0, 0, 0.9);
-}
-
-.produto-info {
-  padding: var(--spacing-lg);
-}
-
-.produto-nome {
-  color: var(--text-primary);
-  font-size: 1.125rem;
-  font-weight: 600;
-  margin: 0 0 var(--spacing-sm) 0;
-}
-
-.produto-descricao {
-  color: var(--text-secondary);
-  font-size: 0.875rem;
-  margin: 0 0 var(--spacing-md) 0;
-  line-height: 1.4;
-}
-
-.produto-categoria {
-  margin-bottom: var(--spacing-md);
-}
-
-.categoria-tag {
-  background: var(--primary);
-  color: white;
-  padding: var(--spacing-xs) var(--spacing-sm);
-  border-radius: var(--border-radius-lg);
-  font-size: 0.75rem;
+.stat-content h3 {
+  font-size: 14px;
+  color: rgba(255, 255, 255, 0.7);
+  margin: 0 0 8px 0;
   font-weight: 500;
 }
 
-.produto-precos {
-  display: flex;
-  align-items: center;
-  gap: var(--spacing-sm);
-  margin-bottom: var(--spacing-md);
+.stat-value {
+  font-size: 24px;
+  font-weight: 700;
+  color: #ffffff;
+  margin-bottom: 4px;
 }
 
-.preco-atual {
-  color: var(--success);
-  font-size: 1.25rem;
+.stat-subtitle {
+  font-size: 12px;
+  color: rgba(255, 255, 255, 0.6);
+}
+
+.filters-section {
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 16px;
+  padding: 24px;
+  margin-bottom: 32px;
+  backdrop-filter: blur(10px);
+}
+
+.search-box {
+  position: relative;
+  margin-bottom: 20px;
+}
+
+.search-input {
+  width: 100%;
+  padding: 16px 48px 16px 20px;
+  background: rgba(255, 255, 255, 0.1);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  border-radius: 12px;
+  color: white;
+  font-size: 16px;
+  transition: all 0.3s ease;
+}
+
+.search-input:focus {
+  outline: none;
+  border-color: #007aff;
+  background: rgba(255, 255, 255, 0.15);
+  box-shadow: 0 0 20px rgba(0, 122, 255, 0.3);
+}
+
+.search-input::placeholder {
+  color: rgba(255, 255, 255, 0.6);
+}
+
+.search-icon {
+  position: absolute;
+  right: 16px;
+  top: 50%;
+  transform: translateY(-50%);
+  color: rgba(255, 255, 255, 0.6);
+  font-size: 18px;
+}
+
+.filters-row {
+  display: flex;
+  gap: 16px;
+  align-items: center;
+  flex-wrap: wrap;
+}
+
+.filter-select {
+  padding: 12px 16px;
+  background: rgba(255, 255, 255, 0.1);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  border-radius: 8px;
+  color: white;
+  font-size: 14px;
+  min-width: 150px;
+  transition: all 0.3s ease;
+}
+
+.filter-select:focus {
+  outline: none;
+  border-color: #007aff;
+  background: rgba(255, 255, 255, 0.15);
+}
+
+.filter-select option {
+  background: #1a1a1a;
+  color: white;
+}
+
+.btn-primary {
+  padding: 12px 24px;
+  background: linear-gradient(135deg, #007aff, #0056cc);
+  color: white;
+  border: none;
+  border-radius: 8px;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.btn-primary:hover {
+  background: linear-gradient(135deg, #0056cc, #004499);
+  transform: translateY(-2px);
+  box-shadow: 0 8px 25px rgba(0, 122, 255, 0.4);
+}
+
+.products-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(350px, 1fr));
+  gap: 24px;
+}
+
+.product-card {
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 16px;
+  overflow: hidden;
+  backdrop-filter: blur(10px);
+  transition: all 0.3s ease;
+}
+
+.product-card:hover {
+  transform: translateY(-4px);
+  box-shadow: 0 12px 30px rgba(0, 0, 0, 0.3);
+  border-color: rgba(0, 122, 255, 0.3);
+}
+
+.product-image {
+  width: 100%;
+  height: 200px;
+  overflow: hidden;
+  background: rgba(255, 255, 255, 0.1);
+}
+
+.product-image img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  transition: transform 0.3s ease;
+}
+
+.product-card:hover .product-image img {
+  transform: scale(1.05);
+}
+
+.product-info {
+  padding: 20px;
+}
+
+.product-name {
+  font-size: 18px;
+  font-weight: 600;
+  color: white;
+  margin: 0 0 8px 0;
+}
+
+.product-description {
+  font-size: 14px;
+  color: rgba(255, 255, 255, 0.7);
+  margin: 0 0 16px 0;
+  line-height: 1.5;
+}
+
+.product-meta {
+  display: flex;
+  gap: 8px;
+  margin-bottom: 16px;
+}
+
+.product-category {
+  padding: 4px 12px;
+  background: rgba(0, 122, 255, 0.2);
+  color: #007aff;
+  border-radius: 20px;
+  font-size: 12px;
+  font-weight: 500;
+}
+
+.product-status {
+  padding: 4px 12px;
+  border-radius: 20px;
+  font-size: 12px;
   font-weight: 600;
 }
 
-.preco-original {
-  color: var(--text-secondary);
-  font-size: 0.875rem;
-  text-decoration: line-through;
-}
-
-.produto-stats {
+.product-stats {
   display: grid;
   grid-template-columns: repeat(3, 1fr);
-  gap: var(--spacing-sm);
-  margin-bottom: var(--spacing-lg);
-  padding: var(--spacing-md);
-  background: var(--bg-tertiary);
-  border-radius: var(--border-radius-sm);
+  gap: 12px;
+  margin-bottom: 16px;
 }
 
 .stat-item {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
   text-align: center;
 }
 
 .stat-label {
-  color: var(--text-secondary);
-  font-size: 0.75rem;
-  margin-bottom: var(--spacing-xs);
+  display: block;
+  font-size: 12px;
+  color: rgba(255, 255, 255, 0.6);
+  margin-bottom: 4px;
 }
 
 .stat-value {
-  color: var(--text-primary);
+  font-size: 14px;
   font-weight: 600;
-  font-size: 0.875rem;
+  color: white;
 }
 
-.estoque-baixo {
-  color: var(--error);
+.low-stock {
+  color: #ff9800;
 }
 
-.produto-actions {
+.product-actions {
   display: flex;
-  gap: var(--spacing-sm);
+  gap: 8px;
+  justify-content: flex-end;
+}
+
+.btn-edit,
+.btn-delete {
+  width: 48px;
+  height: 48px;
+  border: none;
+  border-radius: 50%;
+  font-size: 16px;
+  cursor: pointer;
+  transition: all 0.3s ease;
+}
+
+.btn-edit {
+  background: #007aff;
+  color: white;
+}
+
+.btn-delete {
+  background: #f44336;
+  color: white;
+}
+
+.btn-edit:hover,
+.btn-delete:hover {
+  transform: scale(1.1);
 }
 
 .modal-overlay {
@@ -629,66 +700,69 @@ const toggleStatus = (produto) => {
   left: 0;
   right: 0;
   bottom: 0;
-  background-color: rgba(0, 0, 0, 0.5);
+  background: rgba(0, 0, 0, 0.8);
   display: flex;
   align-items: center;
   justify-content: center;
-  z-index: 100;
+  z-index: 1000;
+  backdrop-filter: blur(5px);
 }
 
 .modal-content {
+  background: linear-gradient(135deg, rgba(255, 255, 255, 0.1), rgba(255, 255, 255, 0.05));
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  border-radius: 16px;
   width: 90%;
-  max-width: 800px;
+  max-width: 600px;
   max-height: 90vh;
   overflow-y: auto;
-  padding: 0;
+  backdrop-filter: blur(20px);
 }
 
 .modal-header {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  padding: var(--spacing-lg);
-  padding-bottom: var(--spacing-md);
-  border-bottom: 1px solid var(--border-color);
+  padding: 24px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
 }
 
 .modal-header h2 {
-  color: var(--text-primary);
-  font-size: 1.5rem;
+  font-size: 20px;
+  font-weight: 600;
+  color: white;
   margin: 0;
 }
 
 .btn-close {
   background: none;
   border: none;
-  font-size: 1.5rem;
-  color: var(--text-secondary);
+  color: rgba(255, 255, 255, 0.7);
+  font-size: 24px;
   cursor: pointer;
-  padding: var(--spacing-xs);
-  border-radius: var(--border-radius-sm);
-  transition: background-color 0.2s ease;
+  padding: 4px;
+  border-radius: 4px;
+  transition: all 0.3s ease;
 }
 
 .btn-close:hover {
-  background-color: var(--bg-tertiary);
+  color: white;
+  background: rgba(255, 255, 255, 0.1);
 }
 
 .modal-body {
-  padding: var(--spacing-lg);
+  padding: 24px;
 }
 
 .form-grid {
   display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: var(--spacing-lg);
-  margin-bottom: var(--spacing-lg);
+  grid-template-columns: repeat(2, 1fr);
+  gap: 20px;
 }
 
 .form-group {
   display: flex;
   flex-direction: column;
-  gap: var(--spacing-sm);
 }
 
 .form-group.full-width {
@@ -696,52 +770,87 @@ const toggleStatus = (produto) => {
 }
 
 .form-group label {
-  color: var(--text-primary);
-  font-size: 0.875rem;
+  font-size: 14px;
   font-weight: 500;
+  color: rgba(255, 255, 255, 0.8);
+  margin-bottom: 8px;
 }
 
-.form-group .input {
-  padding: var(--spacing-sm) var(--spacing-md);
-  border: 1px solid var(--border-color);
-  border-radius: var(--border-radius-sm);
-  background: var(--bg-secondary);
-  color: var(--text-primary);
-  font-size: 0.875rem;
-  transition: border-color 0.2s ease;
+.form-group input,
+.form-group select,
+.form-group textarea {
+  padding: 12px 16px;
+  background: rgba(255, 255, 255, 0.1);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  border-radius: 8px;
+  color: white;
+  font-size: 14px;
+  transition: all 0.3s ease;
 }
 
-.form-group .input:focus {
+.form-group input:focus,
+.form-group select:focus,
+.form-group textarea:focus {
   outline: none;
-  border-color: var(--primary);
+  border-color: #007aff;
+  background: rgba(255, 255, 255, 0.15);
+  box-shadow: 0 0 20px rgba(0, 122, 255, 0.3);
 }
 
-.form-group textarea.input {
-  resize: vertical;
-  min-height: 100px;
+.form-group input::placeholder {
+  color: rgba(255, 255, 255, 0.5);
+}
+
+.form-group select option {
+  background: #1a1a1a;
+  color: white;
 }
 
 .modal-footer {
   display: flex;
   justify-content: flex-end;
-  gap: var(--spacing-md);
-  padding: var(--spacing-lg);
-  padding-top: var(--spacing-md);
-  border-top: 1px solid var(--border-color);
-  background: var(--bg-secondary);
+  gap: 16px;
+  padding: 24px;
+  border-top: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.btn-secondary {
+  padding: 12px 24px;
+  background: transparent;
+  color: rgba(255, 255, 255, 0.7);
+  border: 1px solid rgba(255, 255, 255, 0.3);
+  border-radius: 8px;
+  font-size: 14px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.3s ease;
+}
+
+.btn-secondary:hover {
+  background: rgba(255, 255, 255, 0.1);
+  color: white;
+  border-color: rgba(255, 255, 255, 0.5);
 }
 
 @media (max-width: 768px) {
-  .page-header {
-    flex-direction: column;
-    gap: var(--spacing-md);
+  .produtos-container {
+    padding: 16px;
   }
 
-  .filtros-grid {
+  .stats-grid {
     grid-template-columns: 1fr;
   }
 
-  .produtos-grid {
+  .filters-row {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .filter-select {
+    min-width: auto;
+  }
+
+  .products-grid {
     grid-template-columns: 1fr;
   }
 
@@ -749,12 +858,8 @@ const toggleStatus = (produto) => {
     grid-template-columns: 1fr;
   }
 
-  .produto-stats {
+  .product-stats {
     grid-template-columns: 1fr;
-  }
-
-  .produto-actions {
-    flex-direction: column;
   }
 }
 </style>

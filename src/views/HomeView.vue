@@ -3,8 +3,16 @@ import { useRouter } from 'vue-router'
 
 const router = useRouter()
 
+const isAuthenticated = () => {
+  return localStorage.getItem('isAuthenticated') === 'true'
+}
+
 const goToDashboard = () => {
-  router.push('/dashboard')
+  if (isAuthenticated()) {
+    router.push('/dashboard')
+  } else {
+    router.push('/login')
+  }
 }
 
 const goToLogin = () => {
@@ -13,6 +21,14 @@ const goToLogin = () => {
 
 const goToRegister = () => {
   router.push('/register')
+}
+
+const goToAuthOrDashboard = () => {
+  if (isAuthenticated()) {
+    router.push('/dashboard')
+  } else {
+    router.push('/register')
+  }
 }
 </script>
 
@@ -24,8 +40,8 @@ const goToRegister = () => {
         <div class="header-content">
           <div class="logo">ConectaAI</div>
           <div class="header-actions">
-            <button class="btn btn-outline" @click="goToDashboard">Login</button>
-            <button class="btn btn-outline" @click="goToDashboard">Registrar-se</button>
+            <button class="btn btn-outline" @click="goToLogin">Login</button>
+            <button class="btn btn-outline" @click="goToRegister">Registrar-se</button>
           </div>
         </div>
       </div>
@@ -38,7 +54,7 @@ const goToRegister = () => {
           <h1>Descubra a forma mais fácil de gerenciar seu e-commerce</h1>
           <div class="hero-form">
             <input type="email" placeholder="Seu e-mail" class="email-input" />
-            <button class="btn btn-primary" @click="goToDashboard">Inscrever-se</button>
+            <button class="btn btn-primary" @click="goToAuthOrDashboard">Inscrever-se</button>
           </div>
         </div>
       </div>
@@ -99,7 +115,7 @@ const goToRegister = () => {
             </div>
             <h3>Vendedor</h3>
             <p>Conecte seu negócio conosco e tenha uma plataforma para alavancar suas vendas</p>
-            <button class="btn btn-primary" @click="goToDashboard">Gerencie conosco</button>
+            <button class="btn btn-primary" @click="goToAuthOrDashboard">Gerencie conosco</button>
           </div>
           <div class="partnership-card">
             <div class="partnership-icon">
@@ -111,7 +127,7 @@ const goToRegister = () => {
             </div>
             <h3>Seja um parceiro</h3>
             <p>Conecte conosco e traga seu serviço ou produto para utilização junto ao IntegraAI</p>
-            <button class="btn btn-primary" @click="goToDashboard">Conecte-se conosco</button>
+            <button class="btn btn-primary" @click="goToAuthOrDashboard">Conecte-se conosco</button>
           </div>
         </div>
       </div>
@@ -131,7 +147,7 @@ const goToRegister = () => {
             <div class="bottom-icon">
               <img src="/src/assets/photos/raio.png" alt="Comece Agora" class="bottom-image" />
             </div>
-            <button class="btn btn-primary" @click="goToDashboard">Criar Conta Grátis</button>
+            <button class="btn btn-primary" @click="goToAuthOrDashboard">Criar Conta Grátis</button>
           </div>
           <div class="bottom-card">
             <h3>Trabalhe conosco</h3>
@@ -143,7 +159,7 @@ const goToRegister = () => {
                 class="bottom-image"
               />
             </div>
-            <button class="btn btn-primary" @click="goToDashboard">Se junte a nós</button>
+            <button class="btn btn-primary" @click="goToAuthOrDashboard">Se junte a nós</button>
           </div>
         </div>
       </div>

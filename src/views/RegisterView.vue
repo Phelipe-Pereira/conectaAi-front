@@ -16,9 +16,54 @@ const formData = ref({
   termos: false,
 })
 
+const validateEmail = (email) => {
+  const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
+  return emailRegex.test(email)
+}
+
+const validatePassword = (password) => {
+  return password.length >= 6
+}
+
+const validatePhone = (phone) => {
+  const phoneRegex = /^\(\d{2}\) \d{5}-\d{4}$/
+  return phoneRegex.test(phone)
+}
+
+const formatPhone = () => {
+  let value = formData.value.telefone.replace(/\D/g, '')
+  
+  if (value.length <= 2) {
+    formData.value.telefone = `(${value}`
+  } else if (value.length <= 7) {
+    formData.value.telefone = `(${value.slice(0, 2)}) ${value.slice(2)}`
+  } else {
+    formData.value.telefone = `(${value.slice(0, 2)}) ${value.slice(2, 7)}-${value.slice(7, 11)}`
+  }
+}
+
 const handleRegister = async () => {
-  if (!formData.value.termos) {
-    error.value = 'Você precisa aceitar os termos de serviço.'
+  error.value = ''
+
+  if (
+    !formData.value.nome ||
+    !formData.value.email ||
+    !formData.value.senha ||
+    !formData.value.confirmarSenha ||
+    !formData.value.empresa ||
+    !formData.value.telefone
+  ) {
+    error.value = 'Por favor, preencha todos os campos obrigatórios.'
+    return
+  }
+
+  if (!validateEmail(formData.value.email)) {
+    error.value = 'Por favor, insira um email válido.'
+    return
+  }
+
+  if (!validatePassword(formData.value.senha)) {
+    error.value = 'A senha deve ter pelo menos 6 caracteres.'
     return
   }
 
@@ -27,11 +72,31 @@ const handleRegister = async () => {
     return
   }
 
+  if (!validatePhone(formData.value.telefone)) {
+    error.value = 'Por favor, insira um telefone válido no formato (00) 00000-0000.'
+    return
+  }
+
+  if (!formData.value.termos) {
+    error.value = 'Você precisa aceitar os termos de serviço.'
+    return
+  }
+
   loading.value = true
-  error.value = ''
 
   try {
     await new Promise((resolve) => setTimeout(resolve, 1000))
+
+    localStorage.setItem(
+      'userData',
+      JSON.stringify({
+        nome: formData.value.nome,
+        email: formData.value.email,
+        empresa: formData.value.empresa,
+        telefone: formData.value.telefone,
+      }),
+    )
+
     router.push({ name: 'login' })
   } catch (err) {
     error.value = 'Erro ao criar conta. Tente novamente.'
@@ -50,7 +115,7 @@ const goToLogin = () => {
     <div class="register-content">
       <div class="register-header">
         <img src="@/assets/logo.svg" alt="Middleware Multi-Gateways Logo" class="logo" />
-        <h1>Crie sua conta no Middleware Multi-Gateways</h1>
+        <h1>Crie sua conta no ConectaAI</h1>
         <p class="register-subtitle">
           Comece sua jornada de sucesso no gerenciamento de pagamentos
         </p>
@@ -103,6 +168,8 @@ const goToLogin = () => {
               class="input"
               required
               placeholder="(00) 00000-0000"
+              @input="formatPhone"
+              maxlength="15"
             />
           </div>
 

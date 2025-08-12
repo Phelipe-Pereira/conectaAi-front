@@ -49,11 +49,11 @@
             </div>
           </div>
           <div class="profile-actions">
-            <button class="profile-action-btn">
+            <button class="profile-action-btn" @click="goToProfile">
               <span>👤</span>
               <span>Meu Perfil</span>
             </button>
-            <button class="profile-action-btn">
+            <button class="profile-action-btn" @click="goToSettings">
               <span>⚙️</span>
               <span>Configurações</span>
             </button>
@@ -123,6 +123,7 @@ const currentPageTitle = computed(() => {
     configuracoes: 'Configurações',
     'configuracoes-gateways': 'Configurações - Gateways',
     'configuracoes-webhooks': 'Configurações - Webhooks',
+    perfil: 'Meu Perfil',
   }
   return pageTitles[routeName] || 'Dashboard'
 })
@@ -141,13 +142,21 @@ const markAllAsRead = () => {
   notifications.value = notifications.value.map((n) => ({ ...n, read: true }))
 }
 
-const navigateTo = (path) => {
-  router.push(path)
+const goToProfile = () => {
+  router.push({ name: 'perfil' })
+  showProfile.value = false
+}
+
+const goToSettings = () => {
+  router.push({ name: 'configuracoes' })
   showProfile.value = false
 }
 
 const logout = () => {
+  localStorage.removeItem('isAuthenticated')
+  localStorage.removeItem('userEmail')
   router.push('/login')
+  showProfile.value = false
 }
 
 const handleClickOutside = (event) => {
