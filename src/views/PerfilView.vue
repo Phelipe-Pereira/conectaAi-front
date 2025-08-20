@@ -23,15 +23,13 @@ const editProfile = () => {
 const saveProfile = async () => {
   loading.value = true
   message.value = ''
-  
+
   try {
-    // Simular salvamento
-    await new Promise(resolve => setTimeout(resolve, 1000))
-    
+    await new Promise((resolve) => setTimeout(resolve, 1000))
+
     message.value = 'Perfil atualizado com sucesso!'
     isEditing.value = false
-    
-    // Limpar mensagem após 3 segundos
+
     setTimeout(() => {
       message.value = ''
     }, 3000)
@@ -48,7 +46,6 @@ const cancelEdit = () => {
 }
 
 onMounted(() => {
-  // Carregar dados do usuário do localStorage se disponível
   const userData = localStorage.getItem('userData')
   if (userData) {
     const parsedData = JSON.parse(userData)
@@ -91,14 +88,14 @@ onMounted(() => {
       <div class="perfil-details">
         <div class="details-section">
           <h3>Informações Pessoais</h3>
-          
+
           <div class="form-grid">
             <div class="form-group">
               <label>Nome Completo</label>
-              <input 
-                v-model="userProfile.nome" 
-                type="text" 
-                class="input" 
+              <input
+                v-model="userProfile.nome"
+                type="text"
+                class="input"
                 :disabled="!isEditing"
                 placeholder="Digite seu nome completo"
               />
@@ -106,10 +103,10 @@ onMounted(() => {
 
             <div class="form-group">
               <label>Email</label>
-              <input 
-                v-model="userProfile.email" 
-                type="email" 
-                class="input" 
+              <input
+                v-model="userProfile.email"
+                type="email"
+                class="input"
                 :disabled="!isEditing"
                 placeholder="Digite seu email"
               />
@@ -117,10 +114,10 @@ onMounted(() => {
 
             <div class="form-group">
               <label>Telefone</label>
-              <input 
-                v-model="userProfile.telefone" 
-                type="tel" 
-                class="input" 
+              <input
+                v-model="userProfile.telefone"
+                type="tel"
+                class="input"
                 :disabled="!isEditing"
                 placeholder="Digite seu telefone"
               />
@@ -128,10 +125,10 @@ onMounted(() => {
 
             <div class="form-group">
               <label>Empresa</label>
-              <input 
-                v-model="userProfile.empresa" 
-                type="text" 
-                class="input" 
+              <input
+                v-model="userProfile.empresa"
+                type="text"
+                class="input"
                 :disabled="!isEditing"
                 placeholder="Digite o nome da empresa"
               />
@@ -139,10 +136,10 @@ onMounted(() => {
 
             <div class="form-group">
               <label>Cargo</label>
-              <input 
-                v-model="userProfile.cargo" 
-                type="text" 
-                class="input" 
+              <input
+                v-model="userProfile.cargo"
+                type="text"
+                class="input"
                 :disabled="!isEditing"
                 placeholder="Digite seu cargo"
               />
@@ -152,7 +149,7 @@ onMounted(() => {
 
         <div class="details-section">
           <h3>Informações da Conta</h3>
-          
+
           <div class="account-info">
             <div class="info-item">
               <span class="info-label">Data de Cadastro:</span>
@@ -171,7 +168,7 @@ onMounted(() => {
 
         <div class="details-section" v-if="isEditing">
           <h3>Segurança</h3>
-          
+
           <div class="security-actions">
             <button class="btn btn-outline">
               <span>🔒</span>
@@ -186,16 +183,21 @@ onMounted(() => {
       </div>
 
       <div class="perfil-actions-bottom" v-if="isEditing">
-        <button @click="cancelEdit" class="btn btn-outline">
-          Cancelar
-        </button>
+        <button @click="cancelEdit" class="btn btn-outline">Cancelar</button>
         <button @click="saveProfile" class="btn btn-primary" :disabled="loading">
           <span v-if="loading" class="loading-spinner"></span>
           {{ loading ? 'Salvando...' : 'Salvar Alterações' }}
         </button>
       </div>
 
-      <div v-if="message" class="message" :class="{ 'message-success': message.includes('sucesso'), 'message-error': message.includes('Erro') }">
+      <div
+        v-if="message"
+        class="message"
+        :class="{
+          'message-success': message.includes('sucesso'),
+          'message-error': message.includes('Erro'),
+        }"
+      >
         {{ message }}
       </div>
     </div>
@@ -458,8 +460,12 @@ onMounted(() => {
 }
 
 @keyframes spin {
-  0% { transform: rotate(0deg); }
-  100% { transform: rotate(360deg); }
+  0% {
+    transform: rotate(0deg);
+  }
+  100% {
+    transform: rotate(360deg);
+  }
 }
 
 .message {

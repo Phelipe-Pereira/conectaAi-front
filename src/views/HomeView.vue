@@ -203,7 +203,6 @@ const goToAuthOrDashboard = () => {
   padding: 0 20px;
 }
 
-/* Header */
 .header {
   padding: 20px 0;
   border-bottom: 1px solid rgba(255, 255, 255, 0.1);
@@ -293,7 +292,6 @@ const goToAuthOrDashboard = () => {
   box-shadow: 0 4px 15px rgba(255, 255, 255, 0.1);
 }
 
-/* Hero Section */
 .hero {
   padding: 100px 0;
   text-align: center;
@@ -363,7 +361,6 @@ const goToAuthOrDashboard = () => {
   color: rgba(255, 255, 255, 0.6);
 }
 
-/* Features Section */
 .features {
   padding: 100px 0;
   background: linear-gradient(135deg, #1a1a1a 0%, #0a0a0a 100%);
@@ -454,7 +451,6 @@ const goToAuthOrDashboard = () => {
   font-size: 16px;
 }
 
-/* Partnership Section */
 .partnership {
   padding: 100px 0;
   background: linear-gradient(135deg, #0a0a0a 0%, #1a1a1a 100%);
@@ -549,7 +545,6 @@ const goToAuthOrDashboard = () => {
   font-size: 16px;
 }
 
-/* Bottom Sections */
 .bottom-sections {
   padding: 100px 0;
   background: linear-gradient(135deg, #1a1a1a 0%, #0a0a0a 100%);
@@ -657,7 +652,6 @@ const goToAuthOrDashboard = () => {
   background: linear-gradient(135deg, #007aff, #4caf50);
 }
 
-/* Footer */
 .footer {
   padding: 60px 0;
   background: linear-gradient(135deg, #0a0a0a 0%, #1a1a1a 100%);
@@ -705,7 +699,6 @@ const goToAuthOrDashboard = () => {
   text-shadow: 0 0 10px rgba(0, 122, 255, 0.5);
 }
 
-/* Responsive */
 @media (max-width: 768px) {
   .hero h1 {
     font-size: 36px;

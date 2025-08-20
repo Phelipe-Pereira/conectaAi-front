@@ -1,0 +1,1013 @@
+openapi: 3.0.3
+info:
+  title: ConectaAI — Public API (v1)
+  version: 1.0.0
+  description: |
+    API pública canônica do ConectaAI para unificar Asaas, Stripe e Mercado Pago.
+    Escopo v1: **Clientes**, **Cobranças** (inclui Cartão, Boleto e Pix + Parcelamentos),
+    **Assinaturas**, **Webhooks** e **Notificações**. Transferências serão adicionadas no v2.
+
+servers:
+  - url: https://api.conectaai.com/v1
+    description: Produção
+  - url: https://sandbox.api.conectaai.com/v1
+    description: Sandbox
+
+security:
+  - bearerAuth: []
+
+tags:
+  - name: Customers
+    description: CRUD de clientes
+  - name: Charges
+    description: Cobranças únicas — cartão, boleto, pix e parcelamento
+  - name: Subscriptions
+    description: Cobranças recorrentes (planos/assinaturas)
+  - name: Webhooks
+    description: Registro e gestão de endpoints de webhook
+  - name: Notifications
+    description: Envio e gestão de notificações manuais pela plataforma
+
+paths:
+  /customers:
+    get:
+      tags: [Customers]
+      summary: Listar clientes
+      operationId: listCustomers
+      parameters:
+        - in: query
+          name: q
+          description: Busca textual por nome/email/documento
+          schema: { type: string }
+        - in: query
+          name: limit
+          schema: { type: integer, minimum: 1, maximum: 100, default: 20 }
+        - in: query
+          name: starting_after
+          schema: { type: string, description: Cursor para paginação }
+      responses:
+        '200':
+          description: Lista paginada de clientes
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/CustomerList' }
+    post:
+      tags: [Customers]
+      summary: Criar cliente
+      operationId: createCustomer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/CreateCustomerRequest' }
+      responses:
+        '201':
+          description: Cliente criado
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Customer' }
+        '400': { $ref: '#/components/responses/BadRequest' }
+
+  /customers/{id}:
+    get:
+      tags: [Customers]
+      summary: Obter cliente
+      operationId: getCustomer
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema: { type: string }
+      responses:
+        '200':
+          description: Cliente
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Customer' }
+        '404': { $ref: '#/components/responses/NotFound' }
+    put:
+      tags: [Customers]
+      summary: Atualizar cliente (completo)
+      operationId: replaceCustomer
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema: { type: string }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/UpdateCustomerRequest' }
+      responses:
+        '200':
+          description: Atualizado
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Customer' }
+        '404': { $ref: '#/components/responses/NotFound' }
+    patch:
+      tags: [Customers]
+      summary: Atualizar cliente (parcial)
+      operationId: updateCustomer
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema: { type: string }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/UpdateCustomerRequest' }
+      responses:
+        '200':
+          description: Atualizado
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Customer' }
+        '404': { $ref: '#/components/responses/NotFound' }
+    delete:
+      tags: [Customers]
+      summary: Remover cliente
+      operationId: deleteCustomer
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema: { type: string }
+      responses:
+        '204': { description: Removido }
+        '404': { $ref: '#/components/responses/NotFound' }
+
+  /charges:
+    get:
+      tags: [Charges]
+      summary: Listar cobranças
+      operationId: listCharges
+      parameters:
+        - in: query
+          name: status
+          schema: { $ref: '#/components/schemas/ChargeStatus' }
+        - in: query
+          name: method
+          schema: { $ref: '#/components/schemas/PaymentMethod' }
+        - in: query
+          name: customer_id
+          schema: { type: string }
+        - in: query
+          name: limit
+          schema: { type: integer, minimum: 1, maximum: 100, default: 20 }
+        - in: query
+          name: starting_after
+          schema: { type: string }
+      responses:
+        '200':
+          description: Lista paginada de cobranças
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/ChargeList' }
+    post:
+      tags: [Charges]
+      summary: Criar cobrança (cartão/boleto/pix/parcelado)
+      operationId: createCharge
+      parameters:
+        - in: header
+          name: Idempotency-Key
+          required: true
+          schema: { type: string }
+          description: Chave idempotente para evitar duplicidades
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/CreateChargeRequest' }
+      responses:
+        '201':
+          description: Cobrança criada
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Charge' }
+        '400': { $ref: '#/components/responses/BadRequest' }
+        '409': { $ref: '#/components/responses/Conflict' }
+
+  /charges/{id}:
+    get:
+      tags: [Charges]
+      summary: Obter cobrança
+      operationId: getCharge
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema: { type: string }
+      responses:
+        '200':
+          description: Cobrança
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Charge' }
+        '404': { $ref: '#/components/responses/NotFound' }
+    patch:
+      tags: [Charges]
+      summary: Atualizar cobrança (metadata/descrição)
+      operationId: updateCharge
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema: { type: string }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                description: { type: string }
+                metadata: { type: object, additionalProperties: true }
+      responses:
+        '200':
+          description: Atualizada
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Charge' }
+        '404': { $ref: '#/components/responses/NotFound' }
+    delete:
+      tags: [Charges]
+      summary: Cancelar cobrança (DELETE como alias)
+      operationId: cancelCharge
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema: { type: string }
+        - in: header
+          name: Idempotency-Key
+          required: true
+          schema: { type: string }
+      responses:
+        '200':
+          description: Cancelada
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Charge' }
+        '404': { $ref: '#/components/responses/NotFound' }
+        '409': { $ref: '#/components/responses/Conflict' }
+
+  /charges/{id}/capture:
+    post:
+      tags: [Charges]
+      summary: Capturar cobrança (quando captura manual)
+      operationId: captureCharge
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema: { type: string }
+        - in: header
+          name: Idempotency-Key
+          required: true
+          schema: { type: string }
+      requestBody:
+        required: false
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                amount_to_capture:
+                  type: integer
+                  description: Valor em centavos (opcional para captura parcial)
+      responses:
+        '200':
+          description: Capturada
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Charge' }
+        '404': { $ref: '#/components/responses/NotFound' }
+        '409': { $ref: '#/components/responses/Conflict' }
+
+  /charges/{id}/refunds:
+    post:
+      tags: [Charges]
+      summary: Criar reembolso total/parcial
+      operationId: refundCharge
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema: { type: string }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                amount: { type: integer, description: "Centavos. Omitir para reembolso total." }
+                reason: { type: string }
+                metadata: { type: object, additionalProperties: true }
+      responses:
+        '201':
+          description: Reembolso criado
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Refund' }
+        '404': { $ref: '#/components/responses/NotFound' }
+
+  /subscriptions:
+    get:
+      tags: [Subscriptions]
+      summary: Listar assinaturas
+      operationId: listSubscriptions
+      parameters:
+        - in: query
+          name: customer_id
+          schema: { type: string }
+        - in: query
+          name: status
+          schema:
+            type: string
+            enum: [ACTIVE, PAUSED, CANCELED]
+      responses:
+        '200':
+          description: Lista de assinaturas
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/SubscriptionList' }
+    post:
+      tags: [Subscriptions]
+      summary: Criar assinatura
+      operationId: createSubscription
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/CreateSubscriptionRequest' }
+      responses:
+        '201':
+          description: Assinatura criada
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Subscription' }
+        '400': { $ref: '#/components/responses/BadRequest' }
+
+  /subscriptions/{id}:
+    get:
+      tags: [Subscriptions]
+      summary: Obter assinatura
+      operationId: getSubscription
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema: { type: string }
+      responses:
+        '200':
+          description: Assinatura
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Subscription' }
+        '404': { $ref: '#/components/responses/NotFound' }
+    patch:
+      tags: [Subscriptions]
+      summary: Atualizar assinatura (parcial)
+      operationId: updateSubscription
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema: { type: string }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/UpdateSubscriptionRequest' }
+      responses:
+        '200':
+          description: Atualizada
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Subscription' }
+        '404': { $ref: '#/components/responses/NotFound' }
+    delete:
+      tags: [Subscriptions]
+      summary: Cancelar assinatura
+      operationId: cancelSubscription
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema: { type: string }
+      responses:
+        '204': { description: Cancelada }
+        '404': { $ref: '#/components/responses/NotFound' }
+
+  /subscriptions/{id}/pause:
+    post:
+      tags: [Subscriptions]
+      summary: Pausar assinatura
+      operationId: pauseSubscription
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema: { type: string }
+      responses:
+        '200':
+          description: Pausada
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Subscription' }
+        '404': { $ref: '#/components/responses/NotFound' }
+
+  /subscriptions/{id}/resume:
+    post:
+      tags: [Subscriptions]
+      summary: Retomar assinatura
+      operationId: resumeSubscription
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema: { type: string }
+      responses:
+        '200':
+          description: Ativada
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Subscription' }
+        '404': { $ref: '#/components/responses/NotFound' }
+
+  /webhooks:
+    get:
+      tags: [Webhooks]
+      summary: Listar endpoints de webhook
+      operationId: listWebhookEndpoints
+      responses:
+        '200':
+          description: Lista de endpoints
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/WebhookEndpointList' }
+    post:
+      tags: [Webhooks]
+      summary: Criar endpoint de webhook
+      operationId: createWebhookEndpoint
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/CreateWebhookEndpointRequest' }
+      responses:
+        '201':
+          description: Endpoint criado
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/WebhookEndpoint' }
+
+  /webhooks/{id}:
+    get:
+      tags: [Webhooks]
+      summary: Obter endpoint de webhook
+      operationId: getWebhookEndpoint
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema: { type: string }
+      responses:
+        '200':
+          description: Endpoint
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/WebhookEndpoint' }
+        '404': { $ref: '#/components/responses/NotFound' }
+    put:
+      tags: [Webhooks]
+      summary: Atualizar endpoint de webhook
+      operationId: replaceWebhookEndpoint
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema: { type: string }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/UpdateWebhookEndpointRequest' }
+      responses:
+        '200':
+          description: Atualizado
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/WebhookEndpoint' }
+        '404': { $ref: '#/components/responses/NotFound' }
+    delete:
+      tags: [Webhooks]
+      summary: Remover endpoint de webhook
+      operationId: deleteWebhookEndpoint
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema: { type: string }
+      responses:
+        '204': { description: Removido }
+        '404': { $ref: '#/components/responses/NotFound' }
+
+  /notifications:
+    get:
+      tags: [Notifications]
+      summary: Listar notificações
+      operationId: listNotifications
+      parameters:
+        - in: query
+          name: customer_id
+          schema: { type: string }
+        - in: query
+          name: status
+          schema:
+            type: string
+            enum: [QUEUED, SENT, FAILED]
+      responses:
+        '200':
+          description: Lista de notificações
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/NotificationList' }
+    post:
+      tags: [Notifications]
+      summary: Enviar notificação
+      operationId: createNotification
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/CreateNotificationRequest' }
+      responses:
+        '201':
+          description: Notificação criada
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Notification' }
+
+  /notifications/{id}:
+    get:
+      tags: [Notifications]
+      summary: Obter notificação
+      operationId: getNotification
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema: { type: string }
+      responses:
+        '200':
+          description: Notificação
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Notification' }
+        '404': { $ref: '#/components/responses/NotFound' }
+    put:
+      tags: [Notifications]
+      summary: Atualizar notificação (ex. reagendar)
+      operationId: replaceNotification
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema: { type: string }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/UpdateNotificationRequest' }
+      responses:
+        '200':
+          description: Atualizada
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Notification' }
+        '404': { $ref: '#/components/responses/NotFound' }
+    delete:
+      tags: [Notifications]
+      summary: Cancelar/Excluir notificação
+      operationId: deleteNotification
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema: { type: string }
+      responses:
+        '204': { description: Removida }
+        '404': { $ref: '#/components/responses/NotFound' }
+
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+
+  responses:
+    BadRequest:
+      description: Requisição inválida
+      content:
+        application/json:
+          schema: { $ref: '#/components/schemas/ErrorResponse' }
+    NotFound:
+      description: Recurso não encontrado
+      content:
+        application/json:
+          schema: { $ref: '#/components/schemas/ErrorResponse' }
+    Conflict:
+      description: Conflito de estado
+      content:
+        application/json:
+          schema: { $ref: '#/components/schemas/ErrorResponse' }
+
+  schemas:
+    # ---------- Commons ----------
+    ProviderName:
+      type: string
+      enum: [STRIPE, MERCADOPAGO, ASAAS]
+
+    Address:
+      type: object
+      properties:
+        line1: { type: string }
+        line2: { type: string, nullable: true }
+        city: { type: string }
+        state: { type: string }
+        postal_code: { type: string }
+        country: { type: string, description: "ISO-3166-1 alpha-2, ex: BR" }
+      required: [line1, city, state, postal_code, country]
+
+    ErrorResponse:
+      type: object
+      properties:
+        error:
+          type: object
+          properties:
+            code:
+              type: string
+              enum: [invalid_request, unauthorized, forbidden, not_found, conflict, rate_limited, provider_error, temporary_unavailable]
+            message: { type: string }
+            details:
+              type: array
+              items:
+                type: object
+                properties:
+                  path: { type: string }
+                  rule: { type: string }
+            provider_context:
+              type: object
+              properties:
+                name: { $ref: '#/components/schemas/ProviderName' }
+                status: { type: integer }
+                provider_code: { type: string }
+            correlation_id: { type: string }
+          required: [code, message]
+
+    # ---------- Customers ----------
+    Customer:
+      type: object
+      properties:
+        id: { type: string }
+        name: { type: string }
+        email: { type: string, format: email }
+        tax_id: { type: string }
+        phone: { type: string }
+        address: { $ref: '#/components/schemas/Address' }
+        metadata: { type: object, additionalProperties: true }
+        created_at: { type: string, format: date-time }
+        updated_at: { type: string, format: date-time }
+      required: [id, name, email, created_at]
+
+    CustomerList:
+      type: object
+      properties:
+        items:
+          type: array
+          items: { $ref: '#/components/schemas/Customer' }
+        has_more: { type: boolean }
+        next_cursor: { type: string, nullable: true }
+
+    CreateCustomerRequest:
+      type: object
+      properties:
+        name: { type: string }
+        email: { type: string, format: email }
+        tax_id: { type: string }
+        phone: { type: string }
+        address: { $ref: '#/components/schemas/Address' }
+        metadata: { type: object, additionalProperties: true }
+      required: [name, email]
+
+    UpdateCustomerRequest:
+      type: object
+      properties:
+        name: { type: string }
+        email: { type: string, format: email }
+        tax_id: { type: string }
+        phone: { type: string }
+        address: { $ref: '#/components/schemas/Address' }
+        metadata: { type: object, additionalProperties: true }
+
+    # ---------- Charges ----------
+    PaymentMethod:
+      type: string
+      enum: [CARD, BOLETO, PIX, CHECKOUT_LINK]
+
+    ChargeStatus:
+      type: string
+      enum: [PENDING, REQUIRES_ACTION, AUTHORIZED, PAID, FAILED, CANCELED, REFUNDED]
+
+    InstallmentsRequest:
+      type: object
+      properties:
+        count: { type: integer, minimum: 1, maximum: 24 }
+        interest_mode:
+          type: string
+          enum: [NONE, BUYER, SELLER]
+        interest_rate_pct:
+          type: number
+          description: "Ex. 1.99 = 1,99% a.m."
+      required: [count]
+
+    BoletoOptions:
+      type: object
+      properties:
+        due_date: { type: string, format: date }
+        instructions: { type: string }
+        fine_pct: { type: number }
+        interest_pct: { type: number }
+
+    PixOptions:
+      type: object
+      properties:
+        expires_at: { type: string, format: date-time }
+        payer:
+          type: object
+          properties:
+            name: { type: string }
+            tax_id: { type: string }
+      additionalProperties: false
+
+    ProviderPref:
+      type: object
+      properties:
+        prefer: { $ref: '#/components/schemas/ProviderName' }
+        data: { type: object, additionalProperties: true }
+
+    CreateChargeRequest:
+      type: object
+      properties:
+        customer_id: { type: string }
+        amount: { type: integer, description: "centavos" }
+        currency: { type: string, default: BRL }
+        description: { type: string }
+        payment_method: { $ref: '#/components/schemas/PaymentMethod' }
+        installments: { $ref: '#/components/schemas/InstallmentsRequest' }
+        boleto: { $ref: '#/components/schemas/BoletoOptions' }
+        pix: { $ref: '#/components/schemas/PixOptions' }
+        capture: { type: boolean, default: true, description: "Somente cartão: authorize/capture" }
+        return_url: { type: string }
+        cancel_url: { type: string }
+        items:
+          type: array
+          items:
+            type: object
+            properties:
+              name: { type: string }
+              quantity: { type: integer, minimum: 1 }
+              unit_amount: { type: integer, minimum: 0 }
+            required: [name, quantity, unit_amount]
+        provider: { $ref: '#/components/schemas/ProviderPref' }
+        metadata: { type: object, additionalProperties: true }
+      required: [amount, currency, payment_method]
+
+    PaymentInstructions:
+      type: object
+      properties:
+        checkout_url: { type: string, nullable: true }
+        qr_code_base64: { type: string, nullable: true }
+        qr_code_text: { type: string, nullable: true }
+        barcode: { type: string, nullable: true }
+        expires_at: { type: string, format: date-time, nullable: true }
+
+    ProviderContext:
+      type: object
+      properties:
+        name: { $ref: '#/components/schemas/ProviderName' }
+        id: { type: string, description: "ID da cobrança no provedor" }
+        checkout_session_id: { type: string, nullable: true }
+
+    Charge:
+      type: object
+      properties:
+        id: { type: string }
+        status: { $ref: '#/components/schemas/ChargeStatus' }
+        amount: { type: integer }
+        currency: { type: string }
+        customer_id: { type: string, nullable: true }
+        payment_method: { $ref: '#/components/schemas/PaymentMethod' }
+        description: { type: string, nullable: true }
+        installments:
+          type: object
+          properties:
+            count: { type: integer }
+            effective_interest_rate_pct: { type: number }
+            total_amount: { type: integer }
+        payment_instructions: { $ref: '#/components/schemas/PaymentInstructions' }
+        provider_context: { $ref: '#/components/schemas/ProviderContext' }
+        metadata: { type: object, additionalProperties: true }
+        created_at: { type: string, format: date-time }
+        updated_at: { type: string, format: date-time }
+      required: [id, status, amount, currency, payment_method, created_at]
+
+    ChargeList:
+      type: object
+      properties:
+        items:
+          type: array
+          items: { $ref: '#/components/schemas/Charge' }
+        has_more: { type: boolean }
+        next_cursor: { type: string, nullable: true }
+        total: { type: integer }
+
+    Refund:
+      type: object
+      properties:
+        id: { type: string }
+        charge_id: { type: string }
+        status: { type: string, enum: [PENDING, SUCCEEDED, FAILED] }
+        amount: { type: integer }
+        currency: { type: string }
+        reason: { type: string, nullable: true }
+        created_at: { type: string, format: date-time }
+      required: [id, charge_id, status, amount, currency, created_at]
+
+    # ---------- Subscriptions ----------
+    SubscriptionStatus:
+      type: string
+      enum: [ACTIVE, PAUSED, CANCELED]
+
+    CreateSubscriptionRequest:
+      type: object
+      properties:
+        customer_id: { type: string }
+        amount: { type: integer, description: "centavos" }
+        currency: { type: string, default: BRL }
+        interval: { type: string, enum: [day, week, month, year] }
+        interval_count: { type: integer, default: 1 }
+        trial_days: { type: integer, minimum: 0, default: 0 }
+        description: { type: string }
+        provider: { $ref: '#/components/schemas/ProviderPref' }
+        metadata: { type: object, additionalProperties: true }
+      required: [customer_id, interval]
+
+    UpdateSubscriptionRequest:
+      type: object
+      properties:
+        status: { $ref: '#/components/schemas/SubscriptionStatus' }
+        trial_days: { type: integer }
+        metadata: { type: object, additionalProperties: true }
+
+    Subscription:
+      type: object
+      properties:
+        id: { type: string }
+        customer_id: { type: string }
+        status: { $ref: '#/components/schemas/SubscriptionStatus' }
+        amount: { type: integer, nullable: true }
+        currency: { type: string }
+        interval: { type: string, enum: [day, week, month, year] }
+        interval_count: { type: integer }
+        current_period_end: { type: string, format: date-time, nullable: true }
+        provider_context: { $ref: '#/components/schemas/ProviderContext' }
+        metadata: { type: object, additionalProperties: true }
+        created_at: { type: string, format: date-time }
+        updated_at: { type: string, format: date-time }
+      required: [id, customer_id, status, interval, interval_count, created_at]
+
+    SubscriptionList:
+      type: object
+      properties:
+        items:
+          type: array
+          items: { $ref: '#/components/schemas/Subscription' }
+
+    # ---------- Webhooks ----------
+    WebhookEndpoint:
+      type: object
+      properties:
+        id: { type: string }
+        url: { type: string }
+        secret: { type: string }
+        enabled_events:
+          type: array
+          items:
+            type: string
+            enum:
+              - charge.created
+              - charge.updated
+              - charge.paid
+              - charge.refunded
+              - charge.canceled
+              - subscription.created
+              - subscription.updated
+              - subscription.canceled
+              - customer.created
+              - customer.updated
+        created_at: { type: string, format: date-time }
+
+    CreateWebhookEndpointRequest:
+      type: object
+      properties:
+        url: { type: string }
+        enabled_events:
+          type: array
+          items:
+            type: string
+            enum:
+              - charge.created
+              - charge.updated
+              - charge.paid
+              - charge.refunded
+              - charge.canceled
+              - subscription.created
+              - subscription.updated
+              - subscription.canceled
+              - customer.created
+              - customer.updated
+      required: [url, enabled_events]
+
+    UpdateWebhookEndpointRequest:
+      type: object
+      properties:
+        url: { type: string }
+        enabled_events:
+          type: array
+          items: { type: string }
+
+    WebhookEndpointList:
+      type: object
+      properties:
+        items:
+          type: array
+          items: { $ref: '#/components/schemas/WebhookEndpoint' }
+
+    # ---------- Notifications ----------
+    NotificationChannel:
+      type: string
+      enum: [EMAIL, SMS, WHATSAPP, PUSH]
+
+    NotificationStatus:
+      type: string
+      enum: [QUEUED, SENT, FAILED, CANCELED]
+
+    CreateNotificationRequest:
+      type: object
+      properties:
+        customer_id: { type: string }
+        channel: { $ref: '#/components/schemas/NotificationChannel' }
+        subject: { type: string }
+        message: { type: string }
+        send_at: { type: string, format: date-time, nullable: true }
+        metadata: { type: object, additionalProperties: true }
+      required: [customer_id, channel, message]
+
+    UpdateNotificationRequest:
+      type: object
+      properties:
+        subject: { type: string }
+        message: { type: string }
+        send_at: { type: string, format: date-time, nullable: true }
+        status: { $ref: '#/components/schemas/NotificationStatus' }
+        metadata: { type: object, additionalProperties: true }
+
+    Notification:
+      type: object
+      properties:
+        id: { type: string }
+        customer_id: { type: string }
+        channel: { $ref: '#/components/schemas/NotificationChannel' }
+        subject: { type: string, nullable: true }
+        message: { type: string }
+        status: { $ref: '#/components/schemas/NotificationStatus' }
+        send_at: { type: string, format: date-time, nullable: true }
+        delivered_at: { type: string, format: date-time, nullable: true }
+        metadata: { type: object, additionalProperties: true }
+        created_at: { type: string, format: date-time }
+        updated_at: { type: string, format: date-time }
+
+    NotificationList:
+      type: object
+      properties:
+        items:
+          type: array
+          items: { $ref: '#/components/schemas/Notification' }
