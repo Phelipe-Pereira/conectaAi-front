@@ -54,14 +54,15 @@
       </v-menu>
     </v-app-bar>
 
-    <!-- Navigation Drawer -->
-    <v-navigation-drawer
-      v-model="drawer"
-      app
-      :permanent="$vuetify.display.mdAndUp"
-      :temporary="$vuetify.display.smAndDown"
-      color="grey-lighten-4"
-    >
+         <!-- Navigation Drawer -->
+     <v-navigation-drawer
+       v-model="drawer"
+       app
+       :permanent="$vuetify.display.mdAndUp"
+       :temporary="$vuetify.display.smAndDown"
+       color="white"
+       elevation="1"
+     >
       <v-list class="pa-0">
         <v-list-item
           v-for="item in menuItems"
@@ -75,9 +76,9 @@
       </v-list>
     </v-navigation-drawer>
 
-    <!-- Main Content -->
-    <v-main class="grey-lighten-3">
-      <v-container fluid class="pa-6">
+         <!-- Main Content -->
+     <v-main class="bg-grey-lighten-4">
+       <v-container fluid class="pa-6">
         <router-view />
       </v-container>
     </v-main>
@@ -96,10 +97,12 @@
 <script setup lang="ts">
 import { ref, computed } from 'vue'
 import { useRouter } from 'vue-router'
+import { useAuth } from '@/stores/useAuth'
 import { useSnackbar } from '@/stores/useSnackbar'
 import AppSnackbar from '@/components/common/AppSnackbar.vue'
 
 const router = useRouter()
+const authStore = useAuth()
 const snackbarStore = useSnackbar()
 
 // Estado
@@ -155,33 +158,45 @@ const snackbar = computed(() => ({
 
 // Métodos
 const logout = () => {
-  localStorage.removeItem('isAuthenticated')
-  localStorage.removeItem('auth_token')
+  authStore.logout()
   router.push('/login')
-  snackbarStore.success('Logout realizado com sucesso!')
 }
 </script>
 
 <style scoped>
 .v-navigation-drawer {
-  border-right: 1px solid rgba(0, 0, 0, 0.12);
+  border-right: 1px solid rgba(0, 0, 0, 0.08);
 }
 
 .v-list-item {
   border-radius: 8px;
-  margin: 0 8px;
+  margin: 4px 8px;
+  transition: all 0.3s ease;
+}
+
+.v-list-item:hover {
+  background-color: rgba(0, 122, 255, 0.08);
 }
 
 .v-list-item--active {
-  background-color: var(--v-primary-base);
+  background-color: #007aff;
   color: white;
+}
+
+.v-list-item--active:hover {
+  background-color: #0055b3;
 }
 
 .v-main {
   min-height: 100vh;
+  background-color: #f5f5f5;
 }
 
 .v-container {
   max-width: 1400px;
+}
+
+.v-app-bar {
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
 }
 </style>
