@@ -78,9 +78,9 @@ interface Header {
   width?: string
 }
 
-interface Props {
+interface Props<T = Record<string, unknown>> {
   headers: Header[]
-  items: any[]
+  items: T[]
   loading?: boolean
   search?: string
   sortBy?: string[]
@@ -91,11 +91,11 @@ interface Props {
   showPagination?: boolean
 }
 
-interface Emits {
-  (e: 'edit', item: any): void
-  (e: 'delete', item: any): void
+interface Emits<T = Record<string, unknown>> {
+  (e: 'edit', item: T): void
+  (e: 'delete', item: T): void
   (e: 'page-change', page: number): void
-  (e: 'options-update', options: any): void
+  (e: 'options-update', options: Record<string, unknown>): void
 }
 
 const props = withDefaults(defineProps<Props>(), {

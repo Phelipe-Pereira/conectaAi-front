@@ -1,5 +1,6 @@
 import axios, { AxiosInstance, AxiosResponse, AxiosError, InternalAxiosRequestConfig } from 'axios'
 import { v4 as uuidv4 } from 'uuid'
+import { API_CONFIG, HTTP_STATUS, STORAGE_KEYS } from '@/constants'
 
 // Interface para configuração de retry
 interface RetryConfig extends InternalAxiosRequestConfig {
@@ -9,8 +10,8 @@ interface RetryConfig extends InternalAxiosRequestConfig {
 
 // Configuração base do Axios
 const http: AxiosInstance = axios.create({
-  baseURL: 'https://sandbox.api.conectaai.com/v1',
-  timeout: 30000,
+  baseURL: API_CONFIG.BASE_URL,
+  timeout: API_CONFIG.TIMEOUT,
   headers: {
     'Content-Type': 'application/json',
   },
@@ -23,7 +24,7 @@ http.interceptors.request.use(
     config.headers['x-request-id'] = uuidv4()
 
     // Adicionar token de autenticação se disponível
-    const token = localStorage.getItem('auth_token')
+    const token = localStorage.getItem(STORAGE_KEYS.AUTH_TOKEN)
     if (token) {
       config.headers.Authorization = `Bearer ${token}`
     }
@@ -46,16 +47,17 @@ http.interceptors.response.use(
     // Retry para erros 429 (rate limit) e 5xx (server errors)
     if (
       originalRequest &&
-      (error.response?.status === 429 ||
-        (error.response?.status && error.response.status >= 500)) &&
+      (error.response?.status === HTTP_STATUS.RATE_LIMIT ||
+        (error.response?.status && error.response.status >= HTTP_STATUS.SERVER_ERROR_MIN)) &&
       !originalRequest._retry &&
-      (originalRequest._retryCount ?? 0) < 2
+      (originalRequest._retryCount ?? 0) < API_CONFIG.RETRY_ATTEMPTS
     ) {
       originalRequest._retry = true
       originalRequest._retryCount = (originalRequest._retryCount ?? 0) + 1
 
       // Delay exponencial: 1s, 2s
-      const delay = Math.pow(2, (originalRequest._retryCount ?? 1) - 1) * 1000
+      const delay =
+        Math.pow(2, (originalRequest._retryCount ?? 1) - 1) * API_CONFIG.RETRY_DELAY_BASE
 
       await new Promise((resolve) => setTimeout(resolve, delay))
 

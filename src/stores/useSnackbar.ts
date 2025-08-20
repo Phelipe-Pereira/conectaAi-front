@@ -1,23 +1,24 @@
 import { defineStore } from 'pinia'
 import { ref } from 'vue'
+import { SNACKBAR_CONFIG } from '@/constants'
+
+interface SnackbarOptions {
+  color?: 'success' | 'error' | 'warning' | 'info'
+  timeout?: number
+  icon?: string
+}
 
 export const useSnackbar = defineStore('snackbar', () => {
-  // Estado
   const show = ref(false)
   const text = ref('')
-  const color = ref('success')
-  const timeout = ref(3000)
+  const color = ref<'success' | 'error' | 'warning' | 'info'>('success')
+  const timeout = ref<number>(SNACKBAR_CONFIG.DEFAULT_TIMEOUT)
   const icon = ref('')
 
-  // Ações
-  const showSnackbar = (message: string, options: {
-    color?: string
-    timeout?: number
-    icon?: string
-  } = {}) => {
+  const showSnackbar = (message: string, options: SnackbarOptions = {}) => {
     text.value = message
-    color.value = options.color || 'success'
-    timeout.value = options.timeout || 3000
+    color.value = options.color || SNACKBAR_CONFIG.COLORS.SUCCESS
+    timeout.value = options.timeout || SNACKBAR_CONFIG.DEFAULT_TIMEOUT
     icon.value = options.icon || ''
     show.value = true
   }
@@ -28,50 +29,47 @@ export const useSnackbar = defineStore('snackbar', () => {
 
   const success = (message: string, timeout?: number) => {
     showSnackbar(message, {
-      color: 'success',
-      icon: 'mdi-check-circle',
-      timeout
+      color: SNACKBAR_CONFIG.COLORS.SUCCESS,
+      icon: SNACKBAR_CONFIG.ICONS.SUCCESS,
+      timeout,
     })
   }
 
   const error = (message: string, timeout?: number) => {
     showSnackbar(message, {
-      color: 'error',
-      icon: 'mdi-alert-circle',
-      timeout
+      color: SNACKBAR_CONFIG.COLORS.ERROR,
+      icon: SNACKBAR_CONFIG.ICONS.ERROR,
+      timeout,
     })
   }
 
   const warning = (message: string, timeout?: number) => {
     showSnackbar(message, {
-      color: 'warning',
-      icon: 'mdi-alert',
-      timeout
+      color: SNACKBAR_CONFIG.COLORS.WARNING,
+      icon: SNACKBAR_CONFIG.ICONS.WARNING,
+      timeout,
     })
   }
 
   const info = (message: string, timeout?: number) => {
     showSnackbar(message, {
-      color: 'info',
-      icon: 'mdi-information',
-      timeout
+      color: SNACKBAR_CONFIG.COLORS.INFO,
+      icon: SNACKBAR_CONFIG.ICONS.INFO,
+      timeout,
     })
   }
 
   return {
-    // Estado
     show,
     text,
     color,
     timeout,
     icon,
-    
-    // Ações
     showSnackbar,
     hideSnackbar,
     success,
     error,
     warning,
-    info
+    info,
   }
 })
