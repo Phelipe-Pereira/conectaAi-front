@@ -8,7 +8,7 @@ export default createVuetify({
   components,
   directives,
   theme: {
-    defaultTheme: 'light',
+    defaultTheme: 'dark',
     themes: {
       light: {
         colors: {
@@ -46,10 +46,10 @@ export default createVuetify({
   },
   defaults: {
     VApp: {
-      style: 'background-color: #f5f5f5;',
+      style: 'background-color: #111827;',
     },
     VCard: {
-      style: 'background-color: #ffffff; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1);',
+      style: 'background-color: #1f2937; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.3);',
     },
     VBtn: {
       style: 'text-transform: none; font-weight: 500;',

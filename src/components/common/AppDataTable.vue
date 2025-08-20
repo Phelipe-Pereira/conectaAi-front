@@ -58,10 +58,10 @@
         Mostrando {{ startIndex + 1 }} a {{ endIndex }} de {{ totalItems }} itens
       </div>
       <v-pagination
-        v-model="page"
+        :model-value="page"
         :length="totalPages"
         :total-visible="7"
-        @input="$emit('page-change', $event)"
+        @update:model-value="$emit('page-change', $event)"
       />
     </div>
   </div>

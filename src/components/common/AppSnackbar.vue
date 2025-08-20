@@ -1,6 +1,6 @@
 <template>
   <v-snackbar
-    v-model="snackbar"
+    :model-value="snackbar"
     :color="color"
     :timeout="timeout"
     :top="top"
@@ -10,7 +10,7 @@
     :centered="centered"
     :multi-line="multiLine"
     :vertical="vertical"
-    @input="onInput"
+    @update:model-value="onInput"
   >
     <div class="d-flex align-center">
       <v-icon left v-if="icon" class="mr-2">

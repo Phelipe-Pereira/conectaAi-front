@@ -1,18 +1,9 @@
 <template>
   <v-app>
     <!-- App Bar -->
-    <v-app-bar
-      app
-      color="primary"
-      dark
-      elevation="0"
-      class="px-0"
-    >
-      <v-app-bar-nav-icon
-        @click="drawer = !drawer"
-        class="d-md-none"
-      />
-      
+    <v-app-bar app color="primary" dark elevation="0" class="px-0">
+      <v-app-bar-nav-icon @click="drawer = !drawer" class="d-md-none" />
+
       <v-toolbar-title class="d-flex align-center">
         <v-icon size="32" class="mr-3">mdi-credit-card-multiple</v-icon>
         <span class="text-h6 font-weight-bold">ConectaAI</span>
@@ -23,17 +14,13 @@
       <!-- User Menu -->
       <v-menu offset-y>
         <template v-slot:activator="{ props }">
-          <v-btn
-            icon
-            v-bind="props"
-            class="mr-2"
-          >
+          <v-btn icon v-bind="props" class="mr-2">
             <v-avatar size="32">
               <v-icon>mdi-account</v-icon>
             </v-avatar>
           </v-btn>
         </template>
-        
+
         <v-list>
           <v-list-item @click="$router.push('/dashboard/perfil')">
             <v-list-item-icon>
@@ -41,9 +28,9 @@
             </v-list-item-icon>
             <v-list-item-title>Perfil</v-list-item-title>
           </v-list-item>
-          
+
           <v-divider />
-          
+
           <v-list-item @click="logout">
             <v-list-item-icon>
               <v-icon>mdi-logout</v-icon>
@@ -54,15 +41,15 @@
       </v-menu>
     </v-app-bar>
 
-         <!-- Navigation Drawer -->
-     <v-navigation-drawer
-       v-model="drawer"
-       app
-       :permanent="$vuetify.display.mdAndUp"
-       :temporary="$vuetify.display.smAndDown"
-       color="white"
-       elevation="1"
-     >
+    <!-- Navigation Drawer -->
+    <v-navigation-drawer
+      v-model="drawer"
+      app
+      :permanent="$vuetify.display.mdAndUp"
+      :temporary="$vuetify.display.smAndDown"
+      color="grey-darken-4"
+      elevation="1"
+    >
       <v-list class="pa-0">
         <v-list-item
           v-for="item in menuItems"
@@ -77,7 +64,7 @@
     </v-navigation-drawer>
 
          <!-- Main Content -->
-     <v-main class="bg-grey-lighten-4">
+     <v-main class="bg-grey-darken-4">
        <v-container fluid class="pa-6">
         <router-view />
       </v-container>
@@ -113,38 +100,38 @@ const menuItems = [
   {
     title: 'Dashboard',
     icon: 'mdi-view-dashboard',
-    to: '/dashboard'
+    to: '/dashboard',
   },
   {
     title: 'Clientes',
     icon: 'mdi-account-group',
-    to: '/dashboard/clientes'
+    to: '/dashboard/clientes',
   },
   {
     title: 'Cobranças',
     icon: 'mdi-credit-card',
-    to: '/dashboard/cobrancas'
+    to: '/dashboard/cobrancas',
   },
   {
     title: 'Parcelamentos',
     icon: 'mdi-calendar-clock',
-    to: '/dashboard/parcelamentos'
+    to: '/dashboard/parcelamentos',
   },
   {
     title: 'Assinaturas',
     icon: 'mdi-refresh',
-    to: '/dashboard/assinaturas'
+    to: '/dashboard/assinaturas',
   },
   {
     title: 'Webhooks',
     icon: 'mdi-webhook',
-    to: '/dashboard/webhooks'
+    to: '/dashboard/webhooks',
   },
   {
     title: 'Configurações',
     icon: 'mdi-cog',
-    to: '/dashboard/configuracoes'
-  }
+    to: '/dashboard/configuracoes',
+  },
 ]
 
 // Computed para snackbar
@@ -153,7 +140,7 @@ const snackbar = computed(() => ({
   text: snackbarStore.text,
   color: snackbarStore.color,
   timeout: snackbarStore.timeout,
-  icon: snackbarStore.icon
+  icon: snackbarStore.icon,
 }))
 
 // Métodos
@@ -165,7 +152,7 @@ const logout = () => {
 
 <style scoped>
 .v-navigation-drawer {
-  border-right: 1px solid rgba(0, 0, 0, 0.08);
+  border-right: 1px solid rgba(255, 255, 255, 0.1);
 }
 
 .v-list-item {
@@ -175,7 +162,7 @@ const logout = () => {
 }
 
 .v-list-item:hover {
-  background-color: rgba(0, 122, 255, 0.08);
+  background-color: rgba(0, 122, 255, 0.2);
 }
 
 .v-list-item--active {
@@ -189,7 +176,7 @@ const logout = () => {
 
 .v-main {
   min-height: 100vh;
-  background-color: #f5f5f5;
+  background-color: #111827;
 }
 
 .v-container {
@@ -197,6 +184,6 @@ const logout = () => {
 }
 
 .v-app-bar {
-  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
 }
 </style>
