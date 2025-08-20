@@ -62,7 +62,7 @@ export const apiClient = {
 
     get: (id: string) => http.get<Charge>(`/charges/${id}`),
 
-    update: (id: string, data: { description?: string; metadata?: Record<string, any> }) =>
+    update: (id: string, data: { description?: string; metadata?: Record<string, unknown> }) =>
       http.patch<Charge>(`/charges/${id}`, data),
 
     cancel: (id: string, idempotencyKey: string) =>
@@ -77,7 +77,7 @@ export const apiClient = {
 
     refund: (
       id: string,
-      data: { amount?: number; reason?: string; metadata?: Record<string, any> },
+      data: { amount?: number; reason?: string; metadata?: Record<string, unknown> },
     ) => http.post(`/charges/${id}/refunds`, data),
   },
 

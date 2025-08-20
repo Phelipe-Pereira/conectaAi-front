@@ -1,5 +1,11 @@
-import axios, { AxiosInstance, AxiosResponse, AxiosError } from 'axios'
+import axios, { AxiosInstance, AxiosResponse, AxiosError, InternalAxiosRequestConfig } from 'axios'
 import { v4 as uuidv4 } from 'uuid'
+
+// Interface para configuração de retry
+interface RetryConfig extends InternalAxiosRequestConfig {
+  _retry?: boolean
+  _retryCount?: number
+}
 
 // Configuração base do Axios
 const http: AxiosInstance = axios.create({
@@ -35,20 +41,21 @@ http.interceptors.response.use(
     return response
   },
   async (error: AxiosError) => {
-    const originalRequest = error.config as any
+    const originalRequest = error.config as RetryConfig
 
     // Retry para erros 429 (rate limit) e 5xx (server errors)
     if (
+      originalRequest &&
       (error.response?.status === 429 ||
         (error.response?.status && error.response.status >= 500)) &&
       !originalRequest._retry &&
-      originalRequest._retryCount < 2
+      (originalRequest._retryCount ?? 0) < 2
     ) {
       originalRequest._retry = true
-      originalRequest._retryCount = (originalRequest._retryCount || 0) + 1
+      originalRequest._retryCount = (originalRequest._retryCount ?? 0) + 1
 
       // Delay exponencial: 1s, 2s
-      const delay = Math.pow(2, originalRequest._retryCount - 1) * 1000
+      const delay = Math.pow(2, (originalRequest._retryCount ?? 1) - 1) * 1000
 
       await new Promise((resolve) => setTimeout(resolve, delay))
 
