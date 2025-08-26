@@ -22,19 +22,13 @@
         </template>
 
         <v-list>
-          <v-list-item @click="$router.push('/dashboard/perfil')">
-            <v-list-item-icon>
-              <v-icon>mdi-account</v-icon>
-            </v-list-item-icon>
+          <v-list-item @click="$router.push('/dashboard/perfil')" prepend-icon="mdi-account">
             <v-list-item-title>Perfil</v-list-item-title>
           </v-list-item>
 
           <v-divider />
 
-          <v-list-item @click="logout">
-            <v-list-item-icon>
-              <v-icon>mdi-logout</v-icon>
-            </v-list-item-icon>
+          <v-list-item @click="logout" prepend-icon="mdi-logout">
             <v-list-item-title>Sair</v-list-item-title>
           </v-list-item>
         </v-list>

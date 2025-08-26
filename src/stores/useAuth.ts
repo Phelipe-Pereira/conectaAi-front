@@ -124,6 +124,12 @@ export const useAuth = defineStore('auth', () => {
         avatar: 'https://ui-avatars.com/api/?name=João+Silva&background=0D8ABC&color=fff',
         role: 'admin',
       }
+    } else {
+      // Limpar estado se não estiver autenticado
+      user.value = null
+      token.value = null
+      localStorage.removeItem(STORAGE_KEYS.AUTH_TOKEN)
+      localStorage.removeItem(STORAGE_KEYS.IS_AUTHENTICATED)
     }
   }
 

@@ -1,7 +1,17 @@
 <script setup>
 import { useRouter } from 'vue-router'
+import { onMounted } from 'vue'
+import { useAuth } from '@/stores/useAuth'
 
 const router = useRouter()
+const auth = useAuth()
+
+onMounted(() => {
+  // Se já estiver autenticado, redirecionar para dashboard
+  if (auth.isAuthenticated) {
+    router.push('/dashboard')
+  }
+})
 
 const isAuthenticated = () => {
   return localStorage.getItem('isAuthenticated') === 'true'

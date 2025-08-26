@@ -1,6 +1,6 @@
 // API Configuration
 export const API_CONFIG = {
-  BASE_URL: 'https://sandbox.api.conectaai.com/v1',
+  BASE_URL: 'http://localhost:9999/api/v1', // URL inexistente para forçar dados mock
   TIMEOUT: 30000,
   RETRY_ATTEMPTS: 2,
   RETRY_DELAY_BASE: 1000,
