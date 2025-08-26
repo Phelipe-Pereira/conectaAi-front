@@ -1,133 +1,153 @@
 import http from '@/services/http'
-import type { components, operations } from './types'
+import type {
+  components,
+  operations,
+  paths
+} from './types'
 
-// Tipos extraídos do OpenAPI
-type Customer = components['schemas']['Customer']
-type CustomerList = components['schemas']['CustomerList']
-type CreateCustomerRequest = components['schemas']['CreateCustomerRequest']
-type UpdateCustomerRequest = components['schemas']['UpdateCustomerRequest']
+// Tipos extraídos dos schemas
+export type Customer = components['schemas']['Customer']
+export type CreateCustomerRequest = components['schemas']['CreateCustomerRequest']
+export type UpdateCustomerRequest = components['schemas']['UpdateCustomerRequest']
+export type CustomerList = components['schemas']['CustomerList']
 
-type Charge = components['schemas']['Charge']
-type ChargeList = components['schemas']['ChargeList']
-type CreateChargeRequest = components['schemas']['CreateChargeRequest']
+export type Charge = components['schemas']['Charge']
+export type CreateChargeRequest = components['schemas']['CreateChargeRequest']
+export type ChargeList = components['schemas']['ChargeList']
+export type ChargeStatus = components['schemas']['ChargeStatus']
+export type PaymentMethod = components['schemas']['PaymentMethod']
 
-type Subscription = components['schemas']['Subscription']
-type SubscriptionList = components['schemas']['SubscriptionList']
-type CreateSubscriptionRequest = components['schemas']['CreateSubscriptionRequest']
-type UpdateSubscriptionRequest = components['schemas']['UpdateSubscriptionRequest']
+export type Subscription = components['schemas']['Subscription']
+export type CreateSubscriptionRequest = components['schemas']['CreateSubscriptionRequest']
+export type UpdateSubscriptionRequest = components['schemas']['UpdateSubscriptionRequest']
+export type SubscriptionList = components['schemas']['SubscriptionList']
+export type SubscriptionStatus = components['schemas']['SubscriptionStatus']
 
-type WebhookEndpoint = components['schemas']['WebhookEndpoint']
-type WebhookEndpointList = components['schemas']['WebhookEndpointList']
-type CreateWebhookEndpointRequest = components['schemas']['CreateWebhookEndpointRequest']
-type UpdateWebhookEndpointRequest = components['schemas']['UpdateWebhookEndpointRequest']
+export type WebhookEndpoint = components['schemas']['WebhookEndpoint']
+export type CreateWebhookEndpointRequest = components['schemas']['CreateWebhookEndpointRequest']
+export type UpdateWebhookEndpointRequest = components['schemas']['UpdateWebhookEndpointRequest']
+export type WebhookEndpointList = components['schemas']['WebhookEndpointList']
 
-type Notification = components['schemas']['Notification']
-type NotificationList = components['schemas']['NotificationList']
-type CreateNotificationRequest = components['schemas']['CreateNotificationRequest']
-type UpdateNotificationRequest = components['schemas']['UpdateNotificationRequest']
+export type Notification = components['schemas']['Notification']
+export type CreateNotificationRequest = components['schemas']['CreateNotificationRequest']
+export type UpdateNotificationRequest = components['schemas']['UpdateNotificationRequest']
+export type NotificationList = components['schemas']['NotificationList']
+export type NotificationChannel = components['schemas']['NotificationChannel']
+export type NotificationStatus = components['schemas']['NotificationStatus']
 
-// Parâmetros de query
-type ListCustomersParams = operations['listCustomers']['parameters']['query']
-type ListChargesParams = operations['listCharges']['parameters']['query']
-type ListSubscriptionsParams = operations['listSubscriptions']['parameters']['query']
-type ListNotificationsParams = operations['listNotifications']['parameters']['query']
+// Tipos para parâmetros de query
+export type CustomerListParams = operations['listCustomers']['parameters']['query']
+export type ChargeListParams = operations['listCharges']['parameters']['query']
+export type SubscriptionListParams = operations['listSubscriptions']['parameters']['query']
+export type NotificationListParams = operations['listNotifications']['parameters']['query']
 
-// Cliente SDK
+// Cliente API fortemente tipado
 export const apiClient = {
   // Customers
   customers: {
-    list: (params?: ListCustomersParams) => http.get<CustomerList>('/customers', { params }),
+    list: (params?: CustomerListParams) =>
+      http.get<CustomerList>('/customers', { params }),
 
-    create: (data: CreateCustomerRequest) => http.post<Customer>('/customers', data),
+    get: (id: string) =>
+      http.get<Customer>(`/customers/${id}`),
 
-    get: (id: string) => http.get<Customer>(`/customers/${id}`),
+    create: (data: CreateCustomerRequest) =>
+      http.post<Customer>('/customers', data),
 
     update: (id: string, data: UpdateCustomerRequest) =>
       http.patch<Customer>(`/customers/${id}`, data),
 
-    replace: (id: string, data: CreateCustomerRequest) =>
+    replace: (id: string, data: UpdateCustomerRequest) =>
       http.put<Customer>(`/customers/${id}`, data),
 
-    delete: (id: string) => http.delete(`/customers/${id}`),
+    delete: (id: string) =>
+      http.delete(`/customers/${id}`)
   },
 
   // Charges
   charges: {
-    list: (params?: ListChargesParams) => http.get<ChargeList>('/charges', { params }),
+    list: (params?: ChargeListParams) =>
+      http.get<ChargeList>('/charges', { params }),
 
-    create: (data: CreateChargeRequest, idempotencyKey: string) =>
-      http.post<Charge>('/charges', data, {
-        headers: { 'Idempotency-Key': idempotencyKey },
-      }),
+    get: (id: string) =>
+      http.get<Charge>(`/charges/${id}`),
 
-    get: (id: string) => http.get<Charge>(`/charges/${id}`),
+    create: (data: CreateChargeRequest) =>
+      http.post<Charge>('/charges', data),
 
     update: (id: string, data: { description?: string; metadata?: Record<string, unknown> }) =>
       http.patch<Charge>(`/charges/${id}`, data),
 
-    cancel: (id: string, idempotencyKey: string) =>
-      http.delete<Charge>(`/charges/${id}`, {
-        headers: { 'Idempotency-Key': idempotencyKey },
-      }),
+    cancel: (id: string) =>
+      http.delete<Charge>(`/charges/${id}`),
 
-    capture: (id: string, data?: { amount_to_capture?: number }, idempotencyKey?: string) =>
-      http.post<Charge>(`/charges/${id}/capture`, data, {
-        headers: idempotencyKey ? { 'Idempotency-Key': idempotencyKey } : undefined,
-      }),
+    capture: (id: string, data?: { amount_to_capture?: number }) =>
+      http.post<Charge>(`/charges/${id}/capture`, data),
 
-    refund: (
-      id: string,
-      data: { amount?: number; reason?: string; metadata?: Record<string, unknown> },
-    ) => http.post(`/charges/${id}/refunds`, data),
+    refund: (id: string, data: { amount?: number; reason?: string; metadata?: Record<string, unknown> }) =>
+      http.post<components['schemas']['Refund']>(`/charges/${id}/refunds`, data)
   },
 
   // Subscriptions
   subscriptions: {
-    list: (params?: ListSubscriptionsParams) =>
+    list: (params?: SubscriptionListParams) =>
       http.get<SubscriptionList>('/subscriptions', { params }),
 
-    create: (data: CreateSubscriptionRequest) => http.post<Subscription>('/subscriptions', data),
+    get: (id: string) =>
+      http.get<Subscription>(`/subscriptions/${id}`),
 
-    get: (id: string) => http.get<Subscription>(`/subscriptions/${id}`),
+    create: (data: CreateSubscriptionRequest) =>
+      http.post<Subscription>('/subscriptions', data),
 
     update: (id: string, data: UpdateSubscriptionRequest) =>
       http.patch<Subscription>(`/subscriptions/${id}`, data),
 
-    cancel: (id: string) => http.delete(`/subscriptions/${id}`),
+    cancel: (id: string) =>
+      http.delete(`/subscriptions/${id}`),
 
-    pause: (id: string) => http.post<Subscription>(`/subscriptions/${id}/pause`),
+    pause: (id: string) =>
+      http.post<Subscription>(`/subscriptions/${id}/pause`),
 
-    resume: (id: string) => http.post<Subscription>(`/subscriptions/${id}/resume`),
+    resume: (id: string) =>
+      http.post<Subscription>(`/subscriptions/${id}/resume`)
   },
 
   // Webhooks
   webhooks: {
-    list: () => http.get<WebhookEndpointList>('/webhooks'),
+    list: () =>
+      http.get<WebhookEndpointList>('/webhooks'),
 
-    create: (data: CreateWebhookEndpointRequest) => http.post<WebhookEndpoint>('/webhooks', data),
+    get: (id: string) =>
+      http.get<WebhookEndpoint>(`/webhooks/${id}`),
 
-    get: (id: string) => http.get<WebhookEndpoint>(`/webhooks/${id}`),
+    create: (data: CreateWebhookEndpointRequest) =>
+      http.post<WebhookEndpoint>('/webhooks', data),
 
     update: (id: string, data: UpdateWebhookEndpointRequest) =>
       http.put<WebhookEndpoint>(`/webhooks/${id}`, data),
 
-    delete: (id: string) => http.delete(`/webhooks/${id}`),
+    delete: (id: string) =>
+      http.delete(`/webhooks/${id}`)
   },
 
   // Notifications
   notifications: {
-    list: (params?: ListNotificationsParams) =>
+    list: (params?: NotificationListParams) =>
       http.get<NotificationList>('/notifications', { params }),
 
-    create: (data: CreateNotificationRequest) => http.post<Notification>('/notifications', data),
+    get: (id: string) =>
+      http.get<Notification>(`/notifications/${id}`),
 
-    get: (id: string) => http.get<Notification>(`/notifications/${id}`),
+    create: (data: CreateNotificationRequest) =>
+      http.post<Notification>('/notifications', data),
 
     update: (id: string, data: UpdateNotificationRequest) =>
       http.put<Notification>(`/notifications/${id}`, data),
 
-    delete: (id: string) => http.delete(`/notifications/${id}`),
-  },
+    delete: (id: string) =>
+      http.delete(`/notifications/${id}`)
+  }
 }
 
-export default apiClient
+// Exportar tipos para uso em outros módulos
+export type { components, operations, paths }

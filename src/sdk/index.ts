@@ -1,5 +1,35 @@
 // Exportar o cliente SDK
-export { default as apiClient } from './client'
-
-// Exportar tipos do OpenAPI
-export type { components, operations } from './types'
+export { apiClient } from './client'
+export type {
+  Customer,
+  CreateCustomerRequest,
+  UpdateCustomerRequest,
+  CustomerList,
+  CustomerListParams,
+  Charge,
+  CreateChargeRequest,
+  ChargeList,
+  ChargeStatus,
+  PaymentMethod,
+  ChargeListParams,
+  Subscription,
+  CreateSubscriptionRequest,
+  UpdateSubscriptionRequest,
+  SubscriptionList,
+  SubscriptionStatus,
+  SubscriptionListParams,
+  WebhookEndpoint,
+  CreateWebhookEndpointRequest,
+  UpdateWebhookEndpointRequest,
+  WebhookEndpointList,
+  Notification,
+  CreateNotificationRequest,
+  UpdateNotificationRequest,
+  NotificationList,
+  NotificationChannel,
+  NotificationStatus,
+  NotificationListParams,
+  components,
+  operations,
+  paths
+} from './client'
