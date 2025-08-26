@@ -2,10 +2,10 @@
 export const validateCPF = (cpf: string): boolean => {
   const cleaned = cpf.replace(/\D/g, '')
   
-  if (cleaned.length !== 11) return false
+  if (cleaned.length !== 11) {return false}
   
   // Verifica se todos os dígitos são iguais
-  if (/^(\d)\1{10}$/.test(cleaned)) return false
+  if (/^(\d)\1{10}$/.test(cleaned)) {return false}
   
   // Validação do primeiro dígito verificador
   let sum = 0
@@ -13,8 +13,8 @@ export const validateCPF = (cpf: string): boolean => {
     sum += parseInt(cleaned.charAt(i)) * (10 - i)
   }
   let remainder = (sum * 10) % 11
-  if (remainder === 10 || remainder === 11) remainder = 0
-  if (remainder !== parseInt(cleaned.charAt(9))) return false
+  if (remainder === 10 || remainder === 11) {remainder = 0}
+  if (remainder !== parseInt(cleaned.charAt(9))) {return false}
   
   // Validação do segundo dígito verificador
   sum = 0
@@ -22,8 +22,8 @@ export const validateCPF = (cpf: string): boolean => {
     sum += parseInt(cleaned.charAt(i)) * (11 - i)
   }
   remainder = (sum * 10) % 11
-  if (remainder === 10 || remainder === 11) remainder = 0
-  if (remainder !== parseInt(cleaned.charAt(10))) return false
+  if (remainder === 10 || remainder === 11) {remainder = 0}
+  if (remainder !== parseInt(cleaned.charAt(10))) {return false}
   
   return true
 }
@@ -32,10 +32,10 @@ export const validateCPF = (cpf: string): boolean => {
 export const validateCNPJ = (cnpj: string): boolean => {
   const cleaned = cnpj.replace(/\D/g, '')
   
-  if (cleaned.length !== 14) return false
+  if (cleaned.length !== 14) {return false}
   
   // Verifica se todos os dígitos são iguais
-  if (/^(\d)\1{13}$/.test(cleaned)) return false
+  if (/^(\d)\1{13}$/.test(cleaned)) {return false}
   
   // Validação do primeiro dígito verificador
   const weights1 = [5, 4, 3, 2, 9, 8, 7, 6, 5, 4, 3, 2]
@@ -44,8 +44,8 @@ export const validateCNPJ = (cnpj: string): boolean => {
     sum += parseInt(cleaned.charAt(i)) * weights1[i]
   }
   let remainder = sum % 11
-  let digit1 = remainder < 2 ? 0 : 11 - remainder
-  if (digit1 !== parseInt(cleaned.charAt(12))) return false
+  const digit1 = remainder < 2 ? 0 : 11 - remainder
+  if (digit1 !== parseInt(cleaned.charAt(12))) {return false}
   
   // Validação do segundo dígito verificador
   const weights2 = [6, 5, 4, 3, 2, 9, 8, 7, 6, 5, 4, 3, 2]
@@ -54,8 +54,8 @@ export const validateCNPJ = (cnpj: string): boolean => {
     sum += parseInt(cleaned.charAt(i)) * weights2[i]
   }
   remainder = sum % 11
-  let digit2 = remainder < 2 ? 0 : 11 - remainder
-  if (digit2 !== parseInt(cleaned.charAt(13))) return false
+  const digit2 = remainder < 2 ? 0 : 11 - remainder
+  if (digit2 !== parseInt(cleaned.charAt(13))) {return false}
   
   return true
 }
@@ -82,7 +82,7 @@ export const validateCEP = (cep: string): boolean => {
 export const validateCreditCard = (cardNumber: string): boolean => {
   const cleaned = cardNumber.replace(/\D/g, '')
   
-  if (cleaned.length < 13 || cleaned.length > 19) return false
+  if (cleaned.length < 13 || cleaned.length > 19) {return false}
   
   let sum = 0
   let isEven = false
@@ -115,9 +115,9 @@ export const validateCardExpiry = (expiry: string): boolean => {
   const expMonth = parseInt(month)
   const expYear = parseInt(year)
   
-  if (expMonth < 1 || expMonth > 12) return false
-  if (expYear < currentYear) return false
-  if (expYear === currentYear && expMonth < currentMonth) return false
+  if (expMonth < 1 || expMonth > 12) {return false}
+  if (expYear < currentYear) {return false}
+  if (expYear === currentYear && expMonth < currentMonth) {return false}
   
   return true
 }
