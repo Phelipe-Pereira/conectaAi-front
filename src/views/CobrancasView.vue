@@ -1,163 +1,235 @@
 <template>
-  <div class="cobrancas-view">
+  <div class="cobrancas-container">
     <!-- Header da página -->
     <div class="page-header">
       <div class="header-content">
         <div class="header-info">
-          <v-icon size="32" color="primary" class="mr-3">mdi-credit-card</v-icon>
-          <div>
-            <h1 class="text-h4 font-weight-bold">Cobranças</h1>
-            <p class="text-subtitle-1 text-medium-emphasis">
-              Gerencie todas as cobranças e transações
-            </p>
-          </div>
+          <h1 class="page-title">
+            <v-icon size="32" class="mr-3">mdi-credit-card</v-icon>
+            Cobranças
+          </h1>
+          <p class="page-subtitle">Gerencie todas as cobranças e transações da plataforma</p>
         </div>
-        <v-btn color="primary" prepend-icon="mdi-plus" @click="showCreateDialog = true">
+        <v-btn
+          color="primary"
+          prepend-icon="mdi-plus"
+          size="large"
+          @click="showCreateDialog = true"
+          class="create-btn"
+        >
           Nova Cobrança
         </v-btn>
       </div>
     </div>
 
     <!-- Cards de estatísticas -->
-    <div class="stats-grid mb-6">
-      <v-card>
-        <v-card-text class="text-center">
-          <div class="text-h4 font-weight-bold text-primary">{{ stats.total }}</div>
-          <div class="text-subtitle-2">Total de Cobranças</div>
-        </v-card-text>
-      </v-card>
+    <div class="stats-cards">
+      <div class="stat-card">
+        <div class="stat-icon">
+          <v-icon size="24" color="primary">mdi-credit-card-multiple</v-icon>
+        </div>
+        <div class="stat-content">
+          <div class="stat-value">{{ stats.total }}</div>
+          <div class="stat-label">Total de Cobranças</div>
+        </div>
+      </div>
 
-      <v-card>
-        <v-card-text class="text-center">
-          <div class="text-h4 font-weight-bold text-success">{{ stats.paid }}</div>
-          <div class="text-subtitle-2">Pagas</div>
-        </v-card-text>
-      </v-card>
+      <div class="stat-card">
+        <div class="stat-icon">
+          <v-icon size="24" color="success">mdi-check-circle</v-icon>
+        </div>
+        <div class="stat-content">
+          <div class="stat-value">{{ stats.paid }}</div>
+          <div class="stat-label">Pagas</div>
+        </div>
+      </div>
 
-      <v-card>
-        <v-card-text class="text-center">
-          <div class="text-h4 font-weight-bold text-warning">{{ stats.pending }}</div>
-          <div class="text-subtitle-2">Pendentes</div>
-        </v-card-text>
-      </v-card>
+      <div class="stat-card">
+        <div class="stat-icon">
+          <v-icon size="24" color="warning">mdi-clock</v-icon>
+        </div>
+        <div class="stat-content">
+          <div class="stat-value">{{ stats.pending }}</div>
+          <div class="stat-label">Pendentes</div>
+        </div>
+      </div>
 
-      <v-card>
-        <v-card-text class="text-center">
-          <div class="text-h4 font-weight-bold text-error">{{ stats.failed }}</div>
-          <div class="text-subtitle-2">Falhadas</div>
-        </v-card-text>
-      </v-card>
+      <div class="stat-card">
+        <div class="stat-icon">
+          <v-icon size="24" color="error">mdi-close-circle</v-icon>
+        </div>
+        <div class="stat-content">
+          <div class="stat-value">{{ stats.failed }}</div>
+          <div class="stat-label">Falhadas</div>
+        </div>
+      </div>
     </div>
 
-    <!-- Filtros -->
-    <v-card class="mb-4">
-      <v-card-text>
-        <div class="d-flex align-center justify-space-between flex-wrap gap-4">
-          <v-text-field
-            v-model="searchTerm"
-            prepend-inner-icon="mdi-magnify"
-            placeholder="Buscar cobranças..."
-            variant="outlined"
-            density="comfortable"
-            hide-details
-            class="max-width-300"
-          />
+    <!-- Filtros e busca -->
+    <div class="filters-section">
+      <div class="filters-content">
+        <v-text-field
+          v-model="searchTerm"
+          prepend-inner-icon="mdi-magnify"
+          placeholder="Buscar cobranças por ID, descrição ou cliente..."
+          variant="outlined"
+          density="compact"
+          hide-details
+          class="search-field"
+        />
 
-          <v-select
-            v-model="selectedStatus"
-            :items="statusOptions"
-            label="Status"
-            variant="outlined"
-            density="comfortable"
-            hide-details
-            class="max-width-200"
-          />
+        <v-select
+          v-model="selectedStatus"
+          :items="statusOptions"
+          placeholder="Status"
+          variant="outlined"
+          density="compact"
+          hide-details
+          class="status-filter"
+        />
 
-          <v-select
-            v-model="selectedMethod"
-            :items="methodOptions"
-            label="Método"
-            variant="outlined"
-            density="comfortable"
-            hide-details
-            class="max-width-200"
-          />
-        </div>
-      </v-card-text>
-    </v-card>
+        <v-select
+          v-model="selectedMethod"
+          :items="methodOptions"
+          placeholder="Método"
+          variant="outlined"
+          density="compact"
+          hide-details
+          class="method-filter"
+        />
+
+        <v-btn
+          variant="outlined"
+          prepend-icon="mdi-filter-remove"
+          @click="clearFilters"
+          class="clear-filters-btn"
+        >
+          Limpar Filtros
+        </v-btn>
+      </div>
+    </div>
 
     <!-- Tabela de cobranças -->
-    <v-card>
+    <div class="table-section">
       <v-data-table
         :headers="headers"
         :items="cobrancasFiltradas"
         :loading="loading"
-        :search="searchTerm"
-        class="elevation-1"
+        class="cobrancas-table"
+        hover
       >
+        <template #item.id="{ item }">
+          <div class="id-cell">
+            <v-icon size="16" color="primary" class="mr-2">mdi-identifier</v-icon>
+            <span class="font-mono">{{ item.id }}</span>
+          </div>
+        </template>
+
         <template #item.amount="{ item }">
-          <span class="font-weight-bold">
-            {{ formatCurrency(item.amount) }}
-          </span>
+          <div class="amount-cell">
+            <span class="font-weight-bold text-success">
+              {{ formatCurrency(item.amount) }}
+            </span>
+          </div>
+        </template>
+
+        <template #item.description="{ item }">
+          <div class="description-cell">
+            <span class="text-truncate">{{ item.description }}</span>
+          </div>
         </template>
 
         <template #item.status="{ item }">
-          <v-chip :color="getStatusColor(item.status)" size="small" variant="tonal">
+          <v-chip
+            :color="getStatusColor(item.status)"
+            size="small"
+            variant="tonal"
+            class="status-chip"
+          >
+            <v-icon size="14" class="mr-1">
+              {{ getStatusIcon(item.status) }}
+            </v-icon>
             {{ getStatusText(item.status) }}
           </v-chip>
         </template>
 
         <template #item.payment_method="{ item }">
-          <v-chip :color="getMethodColor(item.payment_method)" size="small" variant="tonal">
+          <v-chip
+            :color="getMethodColor(item.payment_method)"
+            size="small"
+            variant="tonal"
+            class="method-chip"
+          >
+            <v-icon size="14" class="mr-1">
+              {{ getMethodIcon(item.payment_method) }}
+            </v-icon>
             {{ getMethodText(item.payment_method) }}
           </v-chip>
         </template>
 
+        <template #item.customer_id="{ item }">
+          <div class="customer-cell">
+            <v-icon size="16" color="info" class="mr-2">mdi-account</v-icon>
+            <span>{{ item.customer_id }}</span>
+          </div>
+        </template>
+
         <template #item.created_at="{ item }">
-          {{ formatDate(item.created_at) }}
+          <div class="date-cell">
+            {{ formatDate(item.created_at) }}
+          </div>
         </template>
 
         <template #item.actions="{ item }">
-          <v-btn
-            icon="mdi-eye"
-            size="small"
-            color="info"
-            variant="text"
-            @click="viewCobranca(item)"
-          />
-          <v-btn
-            icon="mdi-pencil"
-            size="small"
-            color="primary"
-            variant="text"
-            @click="editCobranca(item)"
-          />
-          <v-btn
-            icon="mdi-delete"
-            size="small"
-            color="error"
-            variant="text"
-            @click="deleteCobranca(item)"
-          />
+          <div class="actions-cell">
+            <v-btn
+              icon="mdi-eye"
+              size="small"
+              variant="text"
+              color="primary"
+              @click="viewCobranca(item)"
+              class="action-btn"
+            />
+            <v-btn
+              icon="mdi-pencil"
+              size="small"
+              variant="text"
+              color="warning"
+              @click="editCobranca(item)"
+              class="action-btn"
+            />
+            <v-btn
+              icon="mdi-delete"
+              size="small"
+              variant="text"
+              color="error"
+              @click="deleteCobranca(item)"
+              class="action-btn"
+            />
+          </div>
         </template>
       </v-data-table>
-    </v-card>
+    </div>
 
     <!-- Dialog de criação/edição -->
-    <v-dialog v-model="showCreateDialog" max-width="700px">
-      <v-card>
-        <v-card-title>
+    <v-dialog v-model="showCreateDialog" max-width="800px" persistent>
+      <v-card class="cobranca-dialog">
+        <v-card-title class="dialog-title">
+          <v-icon size="24" class="mr-2">{{ editingCobranca ? 'mdi-pencil' : 'mdi-plus' }}</v-icon>
           {{ editingCobranca ? 'Editar Cobrança' : 'Nova Cobrança' }}
         </v-card-title>
-        <v-card-text>
-          <v-form ref="form" @submit.prevent="saveCobranca">
+
+        <v-card-text class="dialog-content">
+          <v-form ref="form" v-model="formValid">
             <v-row>
               <v-col cols="12" md="6">
                 <v-text-field
                   v-model="novaCobranca.amount"
                   label="Valor (R$)"
                   type="number"
+                  placeholder="0,00"
                   variant="outlined"
+                  :rules="[rules.required, rules.positive]"
                   required
                   min="0"
                   step="0.01"
@@ -166,9 +238,10 @@
               <v-col cols="12" md="6">
                 <v-select
                   v-model="novaCobranca.payment_method"
-                  :items="methodOptions"
+                  :items="methodOptions.filter((m) => m !== 'Todos')"
                   label="Método de Pagamento"
                   variant="outlined"
+                  :rules="[rules.required]"
                   required
                 />
               </v-col>
@@ -176,7 +249,9 @@
                 <v-text-field
                   v-model="novaCobranca.description"
                   label="Descrição"
+                  placeholder="Descrição da cobrança"
                   variant="outlined"
+                  :rules="[rules.required]"
                   required
                 />
               </v-col>
@@ -184,7 +259,10 @@
                 <v-text-field
                   v-model="novaCobranca.customer_id"
                   label="ID do Cliente"
+                  placeholder="cus_001"
                   variant="outlined"
+                  :rules="[rules.required]"
+                  required
                 />
               </v-col>
               <v-col cols="12" md="6">
@@ -193,6 +271,7 @@
                   :items="['BRL', 'USD', 'EUR']"
                   label="Moeda"
                   variant="outlined"
+                  :rules="[rules.required]"
                   required
                 />
               </v-col>
@@ -200,18 +279,25 @@
                 <v-textarea
                   v-model="novaCobranca.metadata"
                   label="Metadados (JSON)"
+                  placeholder='{"order_id": "123", "product": "item"}'
                   variant="outlined"
                   rows="3"
-                  placeholder='{"order_id": "123", "product": "item"}'
                 />
               </v-col>
             </v-row>
           </v-form>
         </v-card-text>
-        <v-card-actions>
+
+        <v-card-actions class="dialog-actions">
           <v-spacer />
-          <v-btn color="grey" variant="text" @click="showCreateDialog = false"> Cancelar </v-btn>
-          <v-btn color="primary" @click="saveCobranca" :loading="loading">
+          <v-btn variant="outlined" @click="cancelForm" class="cancel-btn"> Cancelar </v-btn>
+          <v-btn
+            color="primary"
+            @click="saveCobranca"
+            :loading="loading"
+            :disabled="!formValid"
+            class="save-btn"
+          >
             {{ editingCobranca ? 'Atualizar' : 'Criar' }}
           </v-btn>
         </v-card-actions>
@@ -219,49 +305,69 @@
     </v-dialog>
 
     <!-- Dialog de visualização -->
-    <v-dialog v-model="showViewDialog" max-width="600px">
-      <v-card>
-        <v-card-title class="d-flex justify-space-between align-center">
-          <span>Detalhes da Cobrança</span>
-          <v-btn icon="mdi-close" variant="text" @click="showViewDialog = false" />
+    <v-dialog v-model="showViewDialog" max-width="700px">
+      <v-card class="view-dialog">
+        <v-card-title class="dialog-title">
+          <v-icon size="24" class="mr-2">mdi-eye</v-icon>
+          Detalhes da Cobrança
+          <v-spacer />
+          <v-btn
+            icon="mdi-close"
+            variant="text"
+            @click="showViewDialog = false"
+            class="close-btn"
+          />
         </v-card-title>
-        <v-card-text v-if="selectedCobranca">
-          <v-row>
-            <v-col cols="6">
-              <div class="text-caption text-medium-emphasis">ID</div>
-              <div class="text-body-1">{{ selectedCobranca.id }}</div>
-            </v-col>
-            <v-col cols="6">
-              <div class="text-caption text-medium-emphasis">Valor</div>
-              <div class="text-body-1 font-weight-bold">
+
+        <v-card-text v-if="selectedCobranca" class="dialog-content">
+          <div class="details-grid">
+            <div class="detail-item">
+              <div class="detail-label">ID</div>
+              <div class="detail-value font-mono">{{ selectedCobranca.id }}</div>
+            </div>
+            <div class="detail-item">
+              <div class="detail-label">Valor</div>
+              <div class="detail-value font-weight-bold text-success">
                 {{ formatCurrency(selectedCobranca.amount) }}
               </div>
-            </v-col>
-            <v-col cols="6">
-              <div class="text-caption text-medium-emphasis">Status</div>
-              <v-chip :color="getStatusColor(selectedCobranca.status)" size="small">
-                {{ getStatusText(selectedCobranca.status) }}
-              </v-chip>
-            </v-col>
-            <v-col cols="6">
-              <div class="text-caption text-medium-emphasis">Método</div>
-              <v-chip :color="getMethodColor(selectedCobranca.payment_method)" size="small">
-                {{ getMethodText(selectedCobranca.payment_method) }}
-              </v-chip>
-            </v-col>
-            <v-col cols="12">
-              <div class="text-caption text-medium-emphasis">Descrição</div>
-              <div class="text-body-1">{{ selectedCobranca.description }}</div>
-            </v-col>
-            <v-col cols="6">
-              <div class="text-caption text-medium-emphasis">Criada em</div>
-              <div class="text-body-1">{{ formatDate(selectedCobranca.created_at) }}</div>
-            </v-col>
-            <v-col cols="6">
-              <div class="text-caption text-medium-emphasis">Atualizada em</div>
-              <div class="text-body-1">{{ formatDate(selectedCobranca.updated_at) }}</div>
-            </v-col>
-          </v-row>
+            </div>
+            <div class="detail-item">
+              <div class="detail-label">Status</div>
+              <div class="detail-value">
+                <v-chip :color="getStatusColor(selectedCobranca.status)" size="small">
+                  {{ getStatusText(selectedCobranca.status) }}
+                </v-chip>
+              </div>
+            </div>
+            <div class="detail-item">
+              <div class="detail-label">Método</div>
+              <div class="detail-value">
+                <v-chip :color="getMethodColor(selectedCobranca.payment_method)" size="small">
+                  {{ getMethodText(selectedCobranca.payment_method) }}
+                </v-chip>
+              </div>
+            </div>
+            <div class="detail-item full-width">
+              <div class="detail-label">Descrição</div>
+              <div class="detail-value">{{ selectedCobranca.description }}</div>
+            </div>
+            <div class="detail-item">
+              <div class="detail-label">Cliente</div>
+              <div class="detail-value">{{ selectedCobranca.customer_id }}</div>
+            </div>
+            <div class="detail-item">
+              <div class="detail-label">Moeda</div>
+              <div class="detail-value">{{ selectedCobranca.currency }}</div>
+            </div>
+            <div class="detail-item">
+              <div class="detail-label">Criada em</div>
+              <div class="detail-value">{{ formatDate(selectedCobranca.created_at) }}</div>
+            </div>
+            <div class="detail-item">
+              <div class="detail-label">Atualizada em</div>
+              <div class="detail-value">{{ formatDate(selectedCobranca.updated_at) }}</div>
+            </div>
+          </div>
         </v-card-text>
       </v-card>
     </v-dialog>
@@ -533,6 +639,38 @@ const getMethodText = (method: string) => {
   return texts[method] || method
 }
 
+const getStatusIcon = (status: string) => {
+  const icons: Record<string, string> = {
+    PENDING: 'mdi-clock',
+    PAID: 'mdi-check-circle',
+    FAILED: 'mdi-close-circle',
+    CANCELED: 'mdi-cancel',
+    REFUNDED: 'mdi-refresh',
+  }
+  return icons[status] || 'mdi-help'
+}
+
+const getMethodIcon = (method: string) => {
+  const icons: Record<string, string> = {
+    CARD: 'mdi-credit-card',
+    BOLETO: 'mdi-receipt',
+    PIX: 'mdi-qrcode',
+    CHECKOUT_LINK: 'mdi-link',
+  }
+  return icons[method] || 'mdi-help'
+}
+
+const clearFilters = () => {
+  searchTerm.value = ''
+  selectedStatus.value = 'Todos'
+  selectedMethod.value = 'Todos'
+}
+
+const cancelForm = () => {
+  showCreateDialog.value = false
+  resetForm()
+}
+
 // Lifecycle
 onMounted(() => {
   // Carregar dados iniciais se necessário
@@ -540,8 +678,11 @@ onMounted(() => {
 </script>
 
 <style scoped>
-.cobrancas-view {
+.cobrancas-container {
   width: 100%;
+  padding: 24px;
+  background-color: #f5f5f5;
+  min-height: 100vh;
 }
 
 .page-header {
@@ -559,17 +700,221 @@ onMounted(() => {
   align-items: center;
 }
 
-.stats-grid {
+.page-title {
+  display: flex;
+  align-items: center;
+}
+
+.page-subtitle {
+  margin-top: 4px;
+  color: #666;
+}
+
+.create-btn {
+  margin-left: 16px;
+}
+
+.stats-cards {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
   gap: 16px;
+  margin-bottom: 24px;
 }
 
-.max-width-300 {
-  max-width: 300px;
+.stat-card {
+  display: flex;
+  align-items: center;
+  padding: 16px;
+  background-color: #fff;
+  border-radius: 8px;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
 }
 
-.max-width-200 {
+.stat-icon {
+  margin-right: 12px;
+}
+
+.stat-content {
+  text-align: left;
+}
+
+.stat-value {
+  font-size: 24px;
+  font-weight: bold;
+  color: #333;
+}
+
+.stat-label {
+  font-size: 14px;
+  color: #666;
+}
+
+.filters-section {
+  margin-bottom: 24px;
+}
+
+.filters-content {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+.search-field,
+.status-filter,
+.method-filter {
+  flex: 1;
+  min-width: 200px;
+}
+
+.clear-filters-btn {
+  margin-left: 12px;
+}
+
+.table-section {
+  background-color: #fff;
+  border-radius: 8px;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+  overflow-x: auto;
+}
+
+.cobrancas-table {
+  border-collapse: separate;
+  border-spacing: 0;
+  width: 100%;
+}
+
+.cobrancas-table th,
+.cobrancas-table td {
+  padding: 12px 16px;
+  text-align: left;
+  border-bottom: 1px solid #eee;
+}
+
+.cobrancas-table th {
+  background-color: #f9f9f9;
+  font-weight: bold;
+  color: #333;
+}
+
+.cobrancas-table tr:hover {
+  background-color: #f0f0f0;
+}
+
+.id-cell {
+  display: flex;
+  align-items: center;
+}
+
+.amount-cell {
+  text-align: right;
+}
+
+.description-cell {
   max-width: 200px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.status-chip,
+.method-chip {
+  display: flex;
+  align-items: center;
+}
+
+.status-chip .v-icon,
+.method-chip .v-icon {
+  margin-right: 4px;
+}
+
+.customer-cell {
+  display: flex;
+  align-items: center;
+}
+
+.date-cell {
+  text-align: right;
+}
+
+.actions-cell {
+  display: flex;
+  gap: 8px;
+}
+
+.action-btn {
+  padding: 8px;
+}
+
+.cobranca-dialog {
+  padding: 24px;
+}
+
+.dialog-title {
+  display: flex;
+  align-items: center;
+  margin-bottom: 20px;
+}
+
+.dialog-content {
+  padding: 0;
+}
+
+.dialog-actions {
+  padding-top: 0;
+}
+
+.cancel-btn {
+  margin-right: 12px;
+}
+
+.save-btn {
+  margin-left: 12px;
+}
+
+.view-dialog {
+  padding: 24px;
+}
+
+.details-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+  gap: 16px;
+}
+
+.detail-item {
+  display: flex;
+  align-items: center;
+}
+
+.detail-label {
+  font-size: 14px;
+  color: #666;
+  font-weight: bold;
+  min-width: 100px;
+}
+
+.detail-value {
+  font-size: 16px;
+  color: #333;
+  font-weight: bold;
+}
+
+.font-mono {
+  font-family: 'Courier New', Courier, monospace;
+}
+
+.text-truncate {
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.full-width {
+  grid-column: 1 / -1;
+}
+
+.close-btn {
+  margin-left: 12px;
 }
 </style>
