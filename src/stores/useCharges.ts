@@ -3,7 +3,6 @@ import { ref, computed } from 'vue'
 import { apiClient } from '@/sdk'
 import { useSnackbar } from './useSnackbar'
 import type { components } from '@/sdk/types'
-import { v4 as uuidv4 } from 'uuid'
 
 type Charge = components['schemas']['Charge']
 type CreateChargeRequest = components['schemas']['CreateChargeRequest']
@@ -88,8 +87,7 @@ export const useCharges = defineStore('charges', () => {
   const createCharge = async (data: CreateChargeRequest) => {
     loading.value = true
     try {
-      const idempotencyKey = uuidv4()
-      const response = await apiClient.charges.create(data, idempotencyKey)
+      const response = await apiClient.charges.create(data)
       charges.value.unshift(response.data)
       totalItems.value += 1
       snackbar.success('Cobrança criada com sucesso!')
@@ -134,8 +132,7 @@ export const useCharges = defineStore('charges', () => {
   const cancelCharge = async (id: string) => {
     loading.value = true
     try {
-      const idempotencyKey = uuidv4()
-      const response = await apiClient.charges.cancel(id, idempotencyKey)
+      const response = await apiClient.charges.cancel(id)
 
       // Atualizar na lista
       const index = charges.value.findIndex((c) => c.id === id)
@@ -161,9 +158,8 @@ export const useCharges = defineStore('charges', () => {
   const captureCharge = async (id: string, amount?: number) => {
     loading.value = true
     try {
-      const idempotencyKey = uuidv4()
       const data = amount ? { amount_to_capture: amount } : undefined
-      const response = await apiClient.charges.capture(id, data, idempotencyKey)
+      const response = await apiClient.charges.capture(id, data)
 
       // Atualizar na lista
       const index = charges.value.findIndex((c) => c.id === id)
@@ -213,7 +209,16 @@ export const useCharges = defineStore('charges', () => {
     await listCharges(filters.value)
   }
 
-  const filterByStatus = async (status: 'PENDING' | 'REQUIRES_ACTION' | 'AUTHORIZED' | 'PAID' | 'FAILED' | 'CANCELED' | 'REFUNDED') => {
+  const filterByStatus = async (
+    status:
+      | 'PENDING'
+      | 'REQUIRES_ACTION'
+      | 'AUTHORIZED'
+      | 'PAID'
+      | 'FAILED'
+      | 'CANCELED'
+      | 'REFUNDED',
+  ) => {
     filters.value.status = status
     currentPage.value = 1
     await listCharges(filters.value)
@@ -228,7 +233,9 @@ export const useCharges = defineStore('charges', () => {
   }
 
   const loadMoreCharges = async () => {
-    if (!hasMore.value || loading.value) return
+    if (!hasMore.value || loading.value) {
+      return
+    }
 
     const lastCharge = charges.value[charges.value.length - 1]
     if (lastCharge) {

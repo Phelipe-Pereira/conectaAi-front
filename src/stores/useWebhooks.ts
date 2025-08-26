@@ -154,7 +154,7 @@ export const useWebhooks = defineStore('webhooks', () => {
   }
 
   const loadMoreWebhooks = async () => {
-    if (!hasMore.value || loading.value) return
+    if (!hasMore.value || loading.value) {return}
 
     const lastWebhook = webhooks.value[webhooks.value.length - 1]
     if (lastWebhook) {

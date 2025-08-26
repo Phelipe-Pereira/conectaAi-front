@@ -133,7 +133,7 @@ export const useCustomers = defineStore('customers', () => {
   }
 
   const loadMoreCustomers = async () => {
-    if (!hasMore.value || loading.value) return
+    if (!hasMore.value || loading.value) {return}
     
     const lastCustomer = customers.value[customers.value.length - 1]
     if (lastCustomer) {

@@ -170,7 +170,7 @@ export const useNotifications = defineStore('notifications', () => {
   }
 
   const loadMoreNotifications = async () => {
-    if (!hasMore.value || loading.value) return
+    if (!hasMore.value || loading.value) {return}
 
     const lastNotification = notifications.value[notifications.value.length - 1]
     if (lastNotification) {

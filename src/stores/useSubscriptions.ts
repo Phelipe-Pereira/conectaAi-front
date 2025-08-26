@@ -216,7 +216,7 @@ export const useSubscriptions = defineStore('subscriptions', () => {
   }
 
   const loadMoreSubscriptions = async () => {
-    if (!hasMore.value || loading.value) return
+    if (!hasMore.value || loading.value) {return}
 
     const lastSubscription = subscriptions.value[subscriptions.value.length - 1]
     if (lastSubscription) {
