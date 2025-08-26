@@ -389,6 +389,7 @@ const searchTerm = ref('')
 const selectedStatus = ref('Todos')
 const selectedMethod = ref('Todos')
 const loading = ref(false)
+const formValid = ref(false)
 
 const novaCobranca = ref({
   amount: '',
@@ -401,6 +402,11 @@ const novaCobranca = ref({
 
 const statusOptions = ['Todos', 'PENDING', 'PAID', 'FAILED', 'CANCELED', 'REFUNDED']
 const methodOptions = ['Todos', 'CARD', 'BOLETO', 'PIX', 'CHECKOUT_LINK']
+
+const rules = {
+  required: (value: any) => !!value || 'Campo obrigatório',
+  positive: (value: any) => parseFloat(value) > 0 || 'Valor deve ser maior que zero',
+}
 
 // Headers da tabela
 const headers = [
@@ -522,6 +528,11 @@ const deleteCobranca = async (cobranca: any) => {
 }
 
 const saveCobranca = async () => {
+  if (!formValid.value) {
+    snackbar.error('Por favor, preencha todos os campos obrigatórios corretamente.')
+    return
+  }
+
   loading.value = true
   try {
     await new Promise((resolve) => setTimeout(resolve, 1000))
@@ -577,6 +588,7 @@ const resetForm = () => {
     customer_id: '',
     metadata: '',
   }
+  formValid.value = false
 }
 
 // Utilitários
@@ -681,12 +693,18 @@ onMounted(() => {
 .cobrancas-container {
   width: 100%;
   padding: 24px;
-  background-color: #f5f5f5;
+  background-color: #1e1e1e;
   min-height: 100vh;
+  color: #ffffff;
 }
 
 .page-header {
+  background: linear-gradient(135deg, rgba(255, 255, 255, 0.1), rgba(255, 255, 255, 0.05));
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 16px;
+  padding: 24px;
   margin-bottom: 24px;
+  backdrop-filter: blur(10px);
 }
 
 .header-content {
@@ -703,11 +721,12 @@ onMounted(() => {
 .page-title {
   display: flex;
   align-items: center;
+  color: #ffffff;
 }
 
 .page-subtitle {
   margin-top: 4px;
-  color: #666;
+  color: #b0b0b0;
 }
 
 .create-btn {
@@ -722,16 +741,30 @@ onMounted(() => {
 }
 
 .stat-card {
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 12px;
+  padding: 20px;
   display: flex;
   align-items: center;
-  padding: 16px;
-  background-color: #fff;
-  border-radius: 8px;
-  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+  gap: 16px;
+  backdrop-filter: blur(10px);
+  transition: all 0.3s ease;
+}
+
+.stat-card:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 8px 25px rgba(0, 0, 0, 0.2);
 }
 
 .stat-icon {
-  margin-right: 12px;
+  width: 48px;
+  height: 48px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(255, 255, 255, 0.1);
+  border-radius: 12px;
 }
 
 .stat-content {
@@ -741,16 +774,21 @@ onMounted(() => {
 .stat-value {
   font-size: 24px;
   font-weight: bold;
-  color: #333;
+  color: #ffffff;
 }
 
 .stat-label {
   font-size: 14px;
-  color: #666;
+  color: #b0b0b0;
 }
 
 .filters-section {
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 12px;
+  padding: 20px;
   margin-bottom: 24px;
+  backdrop-filter: blur(10px);
 }
 
 .filters-content {
@@ -772,9 +810,11 @@ onMounted(() => {
 }
 
 .table-section {
-  background-color: #fff;
-  border-radius: 8px;
-  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 12px;
+  padding: 20px;
+  backdrop-filter: blur(10px);
   overflow-x: auto;
 }
 
@@ -788,17 +828,17 @@ onMounted(() => {
 .cobrancas-table td {
   padding: 12px 16px;
   text-align: left;
-  border-bottom: 1px solid #eee;
+  border-bottom: 1px solid #404040;
 }
 
 .cobrancas-table th {
-  background-color: #f9f9f9;
+  background-color: #1e1e1e;
   font-weight: bold;
-  color: #333;
+  color: #ffffff;
 }
 
 .cobrancas-table tr:hover {
-  background-color: #f0f0f0;
+  background-color: #404040;
 }
 
 .id-cell {
@@ -848,12 +888,15 @@ onMounted(() => {
 
 .cobranca-dialog {
   padding: 24px;
+  background-color: #2d2d2d;
+  color: #ffffff;
 }
 
 .dialog-title {
   display: flex;
   align-items: center;
   margin-bottom: 20px;
+  color: #ffffff;
 }
 
 .dialog-content {
@@ -874,6 +917,8 @@ onMounted(() => {
 
 .view-dialog {
   padding: 24px;
+  background-color: #2d2d2d;
+  color: #ffffff;
 }
 
 .details-grid {
@@ -889,14 +934,14 @@ onMounted(() => {
 
 .detail-label {
   font-size: 14px;
-  color: #666;
+  color: #b0b0b0;
   font-weight: bold;
   min-width: 100px;
 }
 
 .detail-value {
   font-size: 16px;
-  color: #333;
+  color: #ffffff;
   font-weight: bold;
 }
 

@@ -1,109 +1,120 @@
 <script setup lang="ts">
-import { ref, computed } from 'vue'
+import { ref, computed, onMounted } from 'vue'
 import { useSnackbar } from '@/stores/useSnackbar'
+import { formatCPF, formatPhone, formatDate } from '@/utils/formatters'
+import { validateCPF, validateEmail, validatePhone } from '@/utils/validators'
 
 const snackbar = useSnackbar()
 
 // Estado
 const showCreateDialog = ref(false)
+const showViewDialog = ref(false)
 const editingCliente = ref<any>(null)
+const selectedCliente = ref<any>(null)
 const searchTerm = ref('')
 const selectedStatus = ref('Todos')
 const loading = ref(false)
 const formValid = ref(false)
 
 const novoCliente = ref({
-  nome: '',
+  name: '',
   email: '',
-  telefone: '',
-  cpf: '',
-  endereco: '',
-  status: 'Ativo',
+  document: '',
+  phone: '',
+  address: '',
 })
 
 const statusOptions = ['Todos', 'Ativo', 'Inativo']
 
-// Regras de validação
 const rules = {
   required: (value: any) => !!value || 'Campo obrigatório',
-  email: (value: string) => {
-    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
-    return emailRegex.test(value) || 'Email inválido'
-  },
-  phone: (value: string) => {
-    if (!value) return true
-    const phoneRegex = /^\(\d{2}\) \d{4,5}-\d{4}$/
-    return phoneRegex.test(value) || 'Telefone inválido'
-  },
-  cpf: (value: string) => {
-    if (!value) return true
-    const cpfRegex = /^\d{3}\.\d{3}\.\d{3}-\d{2}$/
-    return cpfRegex.test(value) || 'CPF inválido'
-  },
+  email: (value: string) => validateEmail(value) || 'E-mail inválido',
+  cpf: (value: string) => validateCPF(value) || 'CPF inválido',
+  phone: (value: string) => validatePhone(value) || 'Telefone inválido',
 }
 
 // Headers da tabela
 const headers = [
-  { title: 'Nome', key: 'nome', sortable: true },
-  { title: 'Email', key: 'email', sortable: true },
-  { title: 'Telefone', key: 'telefone' },
-  { title: 'CPF', key: 'cpf' },
-  { title: 'Status', key: 'status', sortable: true },
+  { title: 'ID', key: 'id', sortable: true },
+  { title: 'Cliente', key: 'name', sortable: true },
+  { title: 'CPF', key: 'document' },
+  { title: 'Telefone', key: 'phone' },
+  { title: 'Criado em', key: 'created_at', sortable: true },
   { title: 'Ações', key: 'actions', sortable: false },
 ]
 
 // Dados mockados para teste
 const clientes = ref([
   {
-    id: 1,
-    nome: 'João Silva',
-    email: 'joao.silva@email.com',
-    telefone: '(11) 99999-9999',
-    cpf: '123.456.789-00',
-    endereco: 'Rua das Flores, 123 - São Paulo, SP',
-    status: 'Ativo',
+    id: 'cus_001',
+    name: 'João Silva',
+    email: 'joao@exemplo.com',
+    document: '12345678901',
+    phone: '11999999999',
+    address: 'Rua das Flores, 123, Centro, São Paulo - SP',
+    created_at: '2024-01-15T10:30:00Z',
+    updated_at: '2024-01-15T10:30:00Z',
   },
   {
-    id: 2,
-    nome: 'Maria Santos',
-    email: 'maria.santos@email.com',
-    telefone: '(11) 88888-8888',
-    cpf: '987.654.321-00',
-    endereco: 'Av. Paulista, 456 - São Paulo, SP',
-    status: 'Ativo',
+    id: 'cus_002',
+    name: 'Maria Santos',
+    email: 'maria@exemplo.com',
+    document: '98765432100',
+    phone: '11888888888',
+    address: 'Av. Paulista, 1000, Bela Vista, São Paulo - SP',
+    created_at: '2024-01-14T14:20:00Z',
+    updated_at: '2024-01-14T14:20:00Z',
   },
   {
-    id: 3,
-    nome: 'Pedro Oliveira',
-    email: 'pedro.oliveira@email.com',
-    telefone: '(11) 77777-7777',
-    cpf: '456.789.123-00',
-    endereco: 'Rua Augusta, 789 - São Paulo, SP',
-    status: 'Inativo',
+    id: 'cus_003',
+    name: 'Pedro Costa',
+    email: 'pedro@exemplo.com',
+    document: '11122233344',
+    phone: '11777777777',
+    address: 'Rua Augusta, 500, Consolação, São Paulo - SP',
+    created_at: '2024-01-13T09:15:00Z',
+    updated_at: '2024-01-13T09:15:00Z',
   },
 ])
 
 // Computed
-const clientesFiltrados = computed(() => {
+const filteredClientes = computed(() => {
   let filtered = clientes.value
 
   if (searchTerm.value) {
+    const search = searchTerm.value.toLowerCase()
     filtered = filtered.filter(
       (cliente) =>
-        cliente.nome.toLowerCase().includes(searchTerm.value.toLowerCase()) ||
-        cliente.email.toLowerCase().includes(searchTerm.value.toLowerCase()) ||
-        cliente.cpf.includes(searchTerm.value),
+        cliente.name.toLowerCase().includes(search) ||
+        cliente.email.toLowerCase().includes(search) ||
+        cliente.document.includes(search)
     )
-  }
-
-  if (selectedStatus.value !== 'Todos') {
-    filtered = filtered.filter((cliente) => cliente.status === selectedStatus.value)
   }
 
   return filtered
 })
 
+const activeClients = computed(() => clientes.value.length)
+const newThisMonth = computed(() => {
+  const thisMonth = new Date().getMonth()
+  return clientes.value.filter((cliente) => {
+    const clientMonth = new Date(cliente.created_at).getMonth()
+    return clientMonth === thisMonth
+  }).length
+})
+const withPaymentMethod = computed(() => clientes.value.length)
+
 // Métodos
+const clearFilters = () => {
+  searchTerm.value = ''
+  selectedStatus.value = 'Todos'
+}
+
+const viewCliente = (cliente: any) => {
+  selectedCliente.value = cliente
+  showViewDialog.value = true
+}
+
 const editCliente = (cliente: any) => {
   editingCliente.value = cliente
   novoCliente.value = { ...cliente }
@@ -114,13 +125,12 @@ const deleteCliente = async (cliente: any) => {
   if (confirm('Tem certeza que deseja excluir este cliente?')) {
     loading.value = true
     try {
-      // Simular exclusão
       await new Promise((resolve) => setTimeout(resolve, 1000))
       const index = clientes.value.findIndex((c) => c.id === cliente.id)
       if (index !== -1) {
         clientes.value.splice(index, 1)
+        snackbar.success('Cliente excluído com sucesso!')
       }
-      snackbar.success('Cliente excluído com sucesso!')
     } catch (error) {
       snackbar.error('Erro ao excluir cliente')
     } finally {
@@ -130,23 +140,33 @@ const deleteCliente = async (cliente: any) => {
 }
 
 const saveCliente = async () => {
+  if (!formValid.value) {
+    snackbar.error('Por favor, preencha todos os campos obrigatórios corretamente.')
+    return
+  }
+
   loading.value = true
   try {
-    // Simular salvamento
     await new Promise((resolve) => setTimeout(resolve, 1000))
 
     if (editingCliente.value) {
       // Editar
       const index = clientes.value.findIndex((c) => c.id === editingCliente.value.id)
       if (index !== -1) {
-        clientes.value[index] = { ...editingCliente.value, ...novoCliente.value }
+        clientes.value[index] = {
+          ...editingCliente.value,
+          ...novoCliente.value,
+          updated_at: new Date().toISOString(),
+        }
       }
       snackbar.success('Cliente atualizado com sucesso!')
     } else {
       // Criar
       const newCliente = {
-        id: Date.now(),
+        id: `cus_${Date.now()}`,
         ...novoCliente.value,
+        created_at: new Date().toISOString(),
+        updated_at: new Date().toISOString(),
       }
       clientes.value.unshift(newCliente)
       snackbar.success('Cliente criado com sucesso!')
@@ -164,29 +184,24 @@ const saveCliente = async () => {
 const resetForm = () => {
   editingCliente.value = null
   novoCliente.value = {
-    nome: '',
+    name: '',
     email: '',
-    telefone: '',
-    cpf: '',
-    endereco: '',
-    status: 'Ativo',
+    document: '',
+    phone: '',
+    address: '',
   }
-}
-
-const clearFilters = () => {
-  searchTerm.value = ''
-  selectedStatus.value = 'Todos'
-}
-
-const viewCliente = (cliente: any) => {
-  // Implementar visualização detalhada do cliente
-  console.log('Visualizar cliente:', cliente)
+  formValid.value = false
 }
 
 const cancelForm = () => {
   showCreateDialog.value = false
   resetForm()
 }
+
+// Lifecycle
+onMounted(() => {
+  // Carregar dados se necessário
+})
 </script>
 
 <template>
@@ -200,7 +215,7 @@ const cancelForm = () => {
             Clientes
           </h1>
           <p class="page-subtitle">
-            Gerencie todos os clientes da plataforma de forma eficiente
+            Gerencie seus clientes e informações de pagamento
           </p>
         </div>
         <v-btn
@@ -229,31 +244,31 @@ const cancelForm = () => {
 
       <div class="stat-card">
         <div class="stat-icon">
-          <v-icon size="24" color="success">mdi-account-check</v-icon>
+          <v-icon size="24" color="success">mdi-check-circle</v-icon>
         </div>
         <div class="stat-content">
-          <div class="stat-value">{{ clientes.filter(c => c.status === 'Ativo').length }}</div>
+          <div class="stat-value">{{ activeClients }}</div>
           <div class="stat-label">Ativos</div>
         </div>
       </div>
 
       <div class="stat-card">
         <div class="stat-icon">
-          <v-icon size="24" color="warning">mdi-account-off</v-icon>
+          <v-icon size="24" color="warning">mdi-clock</v-icon>
         </div>
         <div class="stat-content">
-          <div class="stat-value">{{ clientes.filter(c => c.status === 'Inativo').length }}</div>
-          <div class="stat-label">Inativos</div>
+          <div class="stat-value">{{ newThisMonth }}</div>
+          <div class="stat-label">Novos este Mês</div>
         </div>
       </div>
 
       <div class="stat-card">
         <div class="stat-icon">
-          <v-icon size="24" color="info">mdi-account-plus</v-icon>
+          <v-icon size="24" color="info">mdi-credit-card</v-icon>
         </div>
         <div class="stat-content">
-          <div class="stat-value">{{ clientes.filter(c => new Date().getTime() - c.id < 86400000).length }}</div>
-          <div class="stat-label">Novos Hoje</div>
+          <div class="stat-value">{{ withPaymentMethod }}</div>
+          <div class="stat-label">Com Método de Pagamento</div>
         </div>
       </div>
     </div>
@@ -264,7 +279,7 @@ const cancelForm = () => {
         <v-text-field
           v-model="searchTerm"
           prepend-inner-icon="mdi-magnify"
-          placeholder="Buscar clientes por nome, email ou CPF..."
+          placeholder="Buscar clientes..."
           variant="outlined"
           density="compact"
           hide-details
@@ -296,49 +311,48 @@ const cancelForm = () => {
     <div class="table-section">
       <v-data-table
         :headers="headers"
-        :items="clientesFiltrados"
+        :items="filteredClientes"
         :loading="loading"
+        :items-per-page="20"
         class="clientes-table"
         hover
       >
-        <template #item.nome="{ item }">
+        <template #item.id="{ item }">
+          <div class="id-cell">
+            <span class="font-mono">{{ item.id }}</span>
+          </div>
+        </template>
+
+        <template #item.name="{ item }">
           <div class="name-cell">
-            <v-avatar size="32" color="primary" class="mr-3">
-              <span class="text-caption font-weight-bold">{{ item.nome.charAt(0) }}</span>
+            <v-avatar size="32" class="mr-3">
+              <v-icon>mdi-account</v-icon>
             </v-avatar>
             <div>
-              <div class="font-weight-medium">{{ item.nome }}</div>
-              <div class="text-caption text-grey">{{ item.cpf }}</div>
+              <div class="customer-name">{{ item.name }}</div>
+              <div class="customer-email">{{ item.email }}</div>
             </div>
           </div>
         </template>
 
-        <template #item.email="{ item }">
-          <div class="email-cell">
-            <v-icon size="16" color="primary" class="mr-2">mdi-email</v-icon>
-            <span>{{ item.email }}</span>
+        <template #item.document="{ item }">
+          <div class="document-cell">
+            <v-icon size="16" color="primary" class="mr-2">mdi-card-account-details</v-icon>
+            <span>{{ formatCPF(item.document) }}</span>
           </div>
         </template>
 
-        <template #item.telefone="{ item }">
+        <template #item.phone="{ item }">
           <div class="phone-cell">
             <v-icon size="16" color="info" class="mr-2">mdi-phone</v-icon>
-            <span>{{ item.telefone }}</span>
+            <span>{{ formatPhone(item.phone) }}</span>
           </div>
         </template>
 
-        <template #item.status="{ item }">
-          <v-chip
-            :color="item.status === 'Ativo' ? 'success' : 'error'"
-            size="small"
-            variant="tonal"
-            class="status-chip"
-          >
-            <v-icon size="14" class="mr-1">
-              {{ item.status === 'Ativo' ? 'mdi-check-circle' : 'mdi-close-circle' }}
-            </v-icon>
-            {{ item.status }}
-          </v-chip>
+        <template #item.created_at="{ item }">
+          <div class="date-cell">
+            {{ formatDate(item.created_at) }}
+          </div>
         </template>
 
         <template #item.actions="{ item }">
@@ -373,10 +387,10 @@ const cancelForm = () => {
     </div>
 
     <!-- Dialog de criação/edição -->
-    <v-dialog v-model="showCreateDialog" max-width="700px" persistent>
+    <v-dialog v-model="showCreateDialog" max-width="700px">
       <v-card class="cliente-dialog">
         <v-card-title class="dialog-title">
-          <v-icon size="24" class="mr-2">{{ editingCliente ? 'mdi-pencil' : 'mdi-plus' }}</v-icon>
+          <v-icon size="24" class="mr-2">mdi-account-plus</v-icon>
           {{ editingCliente ? 'Editar Cliente' : 'Novo Cliente' }}
         </v-card-title>
 
@@ -385,9 +399,9 @@ const cancelForm = () => {
             <v-row>
               <v-col cols="12" md="6">
                 <v-text-field
-                  v-model="novoCliente.nome"
+                  v-model="novoCliente.name"
                   label="Nome Completo"
-                  placeholder="Digite o nome completo"
+                  placeholder="João Silva"
                   variant="outlined"
                   :rules="[rules.required]"
                   required
@@ -396,9 +410,9 @@ const cancelForm = () => {
               <v-col cols="12" md="6">
                 <v-text-field
                   v-model="novoCliente.email"
-                  label="Email"
+                  label="E-mail"
+                  placeholder="joao@exemplo.com"
                   type="email"
-                  placeholder="exemplo@email.com"
                   variant="outlined"
                   :rules="[rules.required, rules.email]"
                   required
@@ -406,39 +420,31 @@ const cancelForm = () => {
               </v-col>
               <v-col cols="12" md="6">
                 <v-text-field
-                  v-model="novoCliente.telefone"
-                  label="Telefone"
-                  placeholder="(11) 99999-9999"
+                  v-model="novoCliente.document"
+                  label="CPF"
+                  placeholder="000.000.000-00"
                   variant="outlined"
-                  :rules="[rules.phone]"
+                  :rules="[rules.required, rules.cpf]"
+                  required
                 />
               </v-col>
               <v-col cols="12" md="6">
                 <v-text-field
-                  v-model="novoCliente.cpf"
-                  label="CPF"
-                  placeholder="123.456.789-00"
+                  v-model="novoCliente.phone"
+                  label="Telefone"
+                  placeholder="(11) 99999-9999"
                   variant="outlined"
-                  :rules="[rules.cpf]"
+                  :rules="[rules.required, rules.phone]"
+                  required
                 />
               </v-col>
               <v-col cols="12">
                 <v-textarea
-                  v-model="novoCliente.endereco"
-                  label="Endereço Completo"
+                  v-model="novoCliente.address"
+                  label="Endereço"
                   placeholder="Rua, número, bairro, cidade - UF, CEP"
                   variant="outlined"
                   rows="3"
-                />
-              </v-col>
-              <v-col cols="12" md="6">
-                <v-select
-                  v-model="novoCliente.status"
-                  :items="['Ativo', 'Inativo']"
-                  label="Status"
-                  variant="outlined"
-                  :rules="[rules.required]"
-                  required
                 />
               </v-col>
             </v-row>
@@ -447,11 +453,7 @@ const cancelForm = () => {
 
         <v-card-actions class="dialog-actions">
           <v-spacer />
-          <v-btn
-            variant="outlined"
-            @click="cancelForm"
-            class="cancel-btn"
-          >
+          <v-btn variant="outlined" @click="cancelForm" class="cancel-btn">
             Cancelar
           </v-btn>
           <v-btn
@@ -464,6 +466,60 @@ const cancelForm = () => {
             {{ editingCliente ? 'Atualizar' : 'Criar' }}
           </v-btn>
         </v-card-actions>
+      </v-card>
+    </v-dialog>
+
+    <!-- Dialog de visualização -->
+    <v-dialog v-model="showViewDialog" max-width="700px">
+      <v-card class="view-dialog">
+        <v-card-title class="dialog-title">
+          <v-icon size="24" class="mr-2">mdi-eye</v-icon>
+          Detalhes do Cliente
+          <v-spacer />
+          <v-btn
+            icon="mdi-close"
+            variant="text"
+            @click="showViewDialog = false"
+            class="close-btn"
+          />
+        </v-card-title>
+
+        <v-card-text class="dialog-content">
+          <div class="detail-grid">
+            <div class="detail-item">
+              <div class="detail-label">ID</div>
+              <div class="detail-value font-mono">{{ selectedCliente?.id }}</div>
+            </div>
+            <div class="detail-item">
+              <div class="detail-label">Nome</div>
+              <div class="detail-value">{{ selectedCliente?.name }}</div>
+            </div>
+            <div class="detail-item">
+              <div class="detail-label">E-mail</div>
+              <div class="detail-value">{{ selectedCliente?.email }}</div>
+            </div>
+            <div class="detail-item">
+              <div class="detail-label">CPF</div>
+              <div class="detail-value">{{ formatCPF(selectedCliente?.document) }}</div>
+            </div>
+            <div class="detail-item">
+              <div class="detail-label">Telefone</div>
+              <div class="detail-value">{{ formatPhone(selectedCliente?.phone) }}</div>
+            </div>
+            <div class="detail-item full-width">
+              <div class="detail-label">Endereço</div>
+              <div class="detail-value">{{ selectedCliente?.address || 'Não informado' }}</div>
+            </div>
+            <div class="detail-item">
+              <div class="detail-label">Criado em</div>
+              <div class="detail-value">{{ formatDate(selectedCliente?.created_at) }}</div>
+            </div>
+            <div class="detail-item">
+              <div class="detail-label">Atualizado em</div>
+              <div class="detail-value">{{ formatDate(selectedCliente?.updated_at) }}</div>
+            </div>
+          </div>
+        </v-card-text>
       </v-card>
     </v-dialog>
   </div>
@@ -578,7 +634,7 @@ const cancelForm = () => {
 
 .search-field {
   flex: 1;
-  max-width: 400px;
+  max-width: 300px;
 }
 
 .status-filter {
@@ -602,23 +658,39 @@ const cancelForm = () => {
   background: transparent;
 }
 
+.id-cell {
+  font-family: 'Monaco', 'Menlo', 'Ubuntu Mono', monospace;
+  font-size: 13px;
+  color: rgba(255, 255, 255, 0.9);
+}
+
 .name-cell {
   display: flex;
   align-items: center;
 }
 
-.email-cell {
-  display: flex;
-  align-items: center;
+.customer-name {
+  font-weight: 600;
+  color: white;
+  margin-bottom: 2px;
 }
 
+.customer-email {
+  font-size: 12px;
+  color: rgba(255, 255, 255, 0.7);
+}
+
+.document-cell,
 .phone-cell {
   display: flex;
   align-items: center;
+  font-size: 14px;
+  color: rgba(255, 255, 255, 0.9);
 }
 
-.status-chip {
-  font-weight: 500;
+.date-cell {
+  font-size: 14px;
+  color: rgba(255, 255, 255, 0.8);
 }
 
 .actions-cell {
@@ -634,7 +706,8 @@ const cancelForm = () => {
   transform: scale(1.1);
 }
 
-.cliente-dialog {
+.cliente-dialog,
+.view-dialog {
   background: linear-gradient(135deg, #1f2937 0%, #111827 100%);
   border: 1px solid rgba(255, 255, 255, 0.1);
 }
@@ -663,6 +736,34 @@ const cancelForm = () => {
 .save-btn {
   background: linear-gradient(135deg, #007aff 0%, #0055b3 100%);
   box-shadow: 0 4px 12px rgba(0, 122, 255, 0.3);
+}
+
+.detail-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+  gap: 20px;
+}
+
+.detail-item {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.detail-item.full-width {
+  grid-column: 1 / -1;
+}
+
+.detail-label {
+  font-size: 14px;
+  color: rgba(255, 255, 255, 0.7);
+  font-weight: 500;
+}
+
+.detail-value {
+  font-size: 16px;
+  color: white;
+  font-weight: 600;
 }
 
 /* Responsividade */

@@ -10,17 +10,19 @@ const isMobile = ref(window.innerWidth <= 768)
 
 const menuItems = [
   { name: 'Dashboard', icon: '📊', route: 'dashboard' },
-  { name: 'Produtos', icon: '📦', route: 'produtos' },
-  { name: 'Pedidos', icon: '🛒', route: 'pedidos' },
+  { name: 'Cobranças', icon: '💳', route: 'cobrancas' },
+  { name: 'Assinaturas', icon: '🔄', route: 'assinaturas' },
+  { name: 'Parcelamentos', icon: '📅', route: 'parcelamentos' },
   { name: 'Clientes', icon: '👥', route: 'clientes' },
+  { name: 'Webhooks', icon: '🔗', route: 'webhooks' },
+  { name: 'Notificações', icon: '🔔', route: 'notifications' },
   {
     name: 'Configurações',
     icon: '⚙️',
     route: 'configuracoes',
     subItems: [
       { name: 'Geral', route: 'configuracoes' },
-      { name: 'Gateways', route: 'configuracoes-gateways' },
-      { name: 'Webhooks', route: 'configuracoes-webhooks' },
+      { name: 'Gateways', route: 'gateways' },
     ],
   },
 ]

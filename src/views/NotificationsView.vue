@@ -1,421 +1,483 @@
 <template>
-  <div class="notifications-view">
+  <div class="notifications-container">
     <!-- Header da página -->
     <div class="page-header">
       <div class="header-content">
         <div class="header-info">
-          <v-icon size="32" color="primary" class="mr-3">mdi-bell</v-icon>
-          <div>
-            <h1 class="text-h4 font-weight-bold">Notificações</h1>
-            <p class="text-subtitle-1 text-medium-emphasis">
-              Gerencie notificações enviadas aos clientes
-            </p>
-          </div>
+          <h1 class="page-title">
+            <v-icon size="32" class="mr-3">mdi-bell</v-icon>
+            Notificações
+          </h1>
+          <p class="page-subtitle">
+            Gerencie notificações manuais e histórico de envios
+          </p>
         </div>
-        <v-btn color="primary" prepend-icon="mdi-plus" @click="showCreateDialog = true">
+        <v-btn
+          color="primary"
+          prepend-icon="mdi-plus"
+          size="large"
+          @click="showCreateDialog = true"
+          class="create-btn"
+        >
           Nova Notificação
         </v-btn>
       </div>
     </div>
 
     <!-- Cards de estatísticas -->
-    <div class="stats-grid mb-6">
-      <v-card>
-        <v-card-text class="text-center">
-          <div class="text-h4 font-weight-bold text-primary">{{ notificationsStore.totalItems }}</div>
-          <div class="text-subtitle-2 text-medium-emphasis">Total de Notificações</div>
-        </v-card-text>
-      </v-card>
-      <v-card>
-        <v-card-text class="text-center">
-          <div class="text-h4 font-weight-bold text-success">{{ notificationsStore.sentNotifications.length }}</div>
-          <div class="text-subtitle-2 text-medium-emphasis">Enviadas</div>
-        </v-card-text>
-      </v-card>
-      <v-card>
-        <v-card-text class="text-center">
-          <div class="text-h4 font-weight-bold text-warning">{{ notificationsStore.queuedNotifications.length }}</div>
-          <div class="text-subtitle-2 text-medium-emphasis">Na Fila</div>
-        </v-card-text>
-      </v-card>
-      <v-card>
-        <v-card-text class="text-center">
-          <div class="text-h4 font-weight-bold text-error">{{ notificationsStore.failedNotifications.length }}</div>
-          <div class="text-subtitle-2 text-medium-emphasis">Falharam</div>
-        </v-card-text>
-      </v-card>
+    <div class="stats-cards">
+      <div class="stat-card">
+        <div class="stat-icon">
+          <v-icon size="24" color="primary">mdi-bell</v-icon>
+        </div>
+        <div class="stat-content">
+          <div class="stat-value">{{ notifications.length }}</div>
+          <div class="stat-label">Total de Notificações</div>
+        </div>
+      </div>
+
+      <div class="stat-card">
+        <div class="stat-icon">
+          <v-icon size="24" color="success">mdi-check-circle</v-icon>
+        </div>
+        <div class="stat-content">
+          <div class="stat-value">{{ sentNotifications }}</div>
+          <div class="stat-label">Enviadas</div>
+        </div>
+      </div>
+
+      <div class="stat-card">
+        <div class="stat-icon">
+          <v-icon size="24" color="warning">mdi-clock</v-icon>
+        </div>
+        <div class="stat-content">
+          <div class="stat-value">{{ pendingNotifications }}</div>
+          <div class="stat-label">Pendentes</div>
+        </div>
+      </div>
+
+      <div class="stat-card">
+        <div class="stat-icon">
+          <v-icon size="24" color="error">mdi-close-circle</v-icon>
+        </div>
+        <div class="stat-content">
+          <div class="stat-value">{{ failedNotifications }}</div>
+          <div class="stat-label">Falharam</div>
+        </div>
+      </div>
     </div>
 
-    <!-- Filtros -->
-    <v-card class="mb-6">
-      <v-card-text>
-        <div class="d-flex flex-wrap gap-4 align-center">
-          <v-text-field
-            v-model="searchQuery"
-            prepend-inner-icon="mdi-magnify"
-            placeholder="Buscar notificações..."
-            variant="outlined"
-            density="comfortable"
-            style="min-width: 300px"
-            @input="handleSearch"
-            clearable
-          />
-          <v-select
-            v-model="statusFilter"
-            :items="statusOptions"
-            label="Status"
-            variant="outlined"
-            density="comfortable"
-            style="min-width: 200px"
-            @update:model-value="handleStatusFilter"
-            clearable
-          />
-          <v-select
-            v-model="channelFilter"
-            :items="channelOptions"
-            label="Canal"
-            variant="outlined"
-            density="comfortable"
-            style="min-width: 200px"
-            @update:model-value="handleChannelFilter"
-            clearable
-          />
-          <v-btn
-            variant="outlined"
-            prepend-icon="mdi-filter-remove"
-            @click="clearFilters"
-          >
-            Limpar Filtros
-          </v-btn>
-        </div>
-      </v-card-text>
-    </v-card>
+    <!-- Filtros e busca -->
+    <div class="filters-section">
+      <div class="filters-content">
+        <v-text-field
+          v-model="searchTerm"
+          prepend-inner-icon="mdi-magnify"
+          placeholder="Buscar notificações..."
+          variant="outlined"
+          density="compact"
+          hide-details
+          class="search-field"
+        />
+
+        <v-select
+          v-model="selectedStatus"
+          :items="statusOptions"
+          placeholder="Status"
+          variant="outlined"
+          density="compact"
+          hide-details
+          class="status-filter"
+        />
+
+        <v-select
+          v-model="selectedType"
+          :items="typeOptions"
+          placeholder="Tipo"
+          variant="outlined"
+          density="compact"
+          hide-details
+          class="type-filter"
+        />
+
+        <v-btn
+          variant="outlined"
+          prepend-icon="mdi-filter-remove"
+          @click="clearFilters"
+          class="clear-filters-btn"
+        >
+          Limpar Filtros
+        </v-btn>
+      </div>
+    </div>
 
     <!-- Tabela de notificações -->
-    <v-card>
-      <v-card-text>
-        <AppDataTable
-          :items="notificationsStore.notifications"
-          :loading="notificationsStore.loading"
-          :headers="headers"
-          :search="searchQuery"
-          :items-per-page="20"
-          @load-more="notificationsStore.loadMoreNotifications"
-          :has-more="notificationsStore.hasMore"
-        >
-          <template #item.channel="{ item }">
-            <div class="d-flex align-center">
-              <v-icon 
-                size="small" 
-                :color="notificationsStore.getChannelColor(item.channel as string)" 
-                class="mr-2"
-              >
-                {{ notificationsStore.getChannelIcon(item.channel as string) }}
-              </v-icon>
-              <v-chip
-                :color="notificationsStore.getChannelColor(item.channel as string)"
-                size="small"
-                variant="tonal"
-              >
-                {{ notificationsStore.getChannelDisplayName(item.channel as string) }}
-              </v-chip>
-            </div>
-          </template>
+    <div class="table-section">
+      <v-data-table
+        :headers="headers"
+        :items="filteredNotifications"
+        :loading="loading"
+        :items-per-page="20"
+        class="notifications-table"
+        hover
+      >
+        <template #item.id="{ item }">
+          <div class="id-cell">
+            <span class="font-mono">{{ item.id }}</span>
+          </div>
+        </template>
 
-          <template #item.status="{ item }">
+        <template #item.type="{ item }">
+          <div class="type-cell">
             <v-chip
-              :color="notificationsStore.getStatusColor(item.status as string)"
+              :color="getTypeColor(item.type)"
               size="small"
               variant="tonal"
             >
-              {{ notificationsStore.getStatusDisplayName(item.status as string) }}
+              <v-icon size="14" class="mr-1">
+                {{ getTypeIcon(item.type) }}
+              </v-icon>
+              {{ getTypeText(item.type) }}
             </v-chip>
-          </template>
+          </div>
+        </template>
 
-          <template #item.created_at="{ item }">
-            {{ formatDate(item.created_at as string) }}
-          </template>
+        <template #item.subject="{ item }">
+          <div class="subject-cell">
+            <div class="notification-subject">{{ item.subject }}</div>
+            <div class="notification-preview">{{ item.message }}</div>
+          </div>
+        </template>
 
-          <template #item.actions="{ item }">
-            <div class="d-flex gap-2">
-              <v-btn
-                icon="mdi-eye"
-                size="small"
-                variant="text"
-                color="primary"
-                @click="viewNotification(item)"
-              />
-              <v-btn
-                icon="mdi-pencil"
-                size="small"
-                variant="text"
-                color="warning"
-                @click="editNotification(item)"
-              />
-              <v-btn
-                icon="mdi-delete"
-                size="small"
-                variant="text"
-                color="error"
-                @click="deleteNotification(item)"
-              />
-            </div>
-          </template>
-        </AppDataTable>
-      </v-card-text>
-    </v-card>
+        <template #item.recipient="{ item }">
+          <div class="recipient-cell">
+            <v-icon size="16" color="primary" class="mr-2">mdi-account</v-icon>
+            <span>{{ item.recipient }}</span>
+          </div>
+        </template>
+
+        <template #item.status="{ item }">
+          <div class="status-cell">
+            <v-chip
+              :color="getStatusColor(item.status)"
+              size="small"
+              variant="tonal"
+            >
+              <v-icon size="14" class="mr-1">
+                {{ getStatusIcon(item.status) }}
+              </v-icon>
+              {{ getStatusText(item.status) }}
+            </v-chip>
+          </div>
+        </template>
+
+        <template #item.created_at="{ item }">
+          <div class="date-cell">
+            {{ formatDate(item.created_at) }}
+          </div>
+        </template>
+
+        <template #item.actions="{ item }">
+          <div class="actions-cell">
+            <v-btn
+              icon="mdi-eye"
+              size="small"
+              variant="text"
+              color="primary"
+              @click="viewNotification(item)"
+              class="action-btn"
+            />
+            <v-btn
+              icon="mdi-pencil"
+              size="small"
+              variant="text"
+              color="warning"
+              @click="editNotification(item)"
+              class="action-btn"
+            />
+            <v-btn
+              icon="mdi-delete"
+              size="small"
+              variant="text"
+              color="error"
+              @click="deleteNotification(item)"
+              class="action-btn"
+            />
+          </div>
+        </template>
+      </v-data-table>
+    </div>
 
     <!-- Dialog de criação/edição -->
-    <v-dialog v-model="showCreateDialog" max-width="600px">
-      <v-card>
-        <v-card-title>
+    <v-dialog v-model="showCreateDialog" max-width="700px">
+      <v-card class="notification-dialog">
+        <v-card-title class="dialog-title">
+          <v-icon size="24" class="mr-2">mdi-bell-plus</v-icon>
           {{ editingNotification ? 'Editar Notificação' : 'Nova Notificação' }}
         </v-card-title>
-        <v-card-text>
+
+        <v-card-text class="dialog-content">
           <v-form ref="form" v-model="formValid">
-            <v-select
-              v-model="formData.customer_id"
-              :items="customerOptions"
-              label="Cliente"
-              variant="outlined"
-              :rules="[v => !!v || 'Cliente é obrigatório']"
-              required
-            />
-            <v-select
-              v-model="formData.channel"
-              :items="channelOptions"
-              label="Canal"
-              variant="outlined"
-              :rules="[v => !!v || 'Canal é obrigatório']"
-              required
-            />
-            <v-text-field
-              v-model="formData.subject"
-              label="Assunto"
-              variant="outlined"
-              :rules="[v => !!v || 'Assunto é obrigatório']"
-              required
-            />
-            <v-textarea
-              v-model="formData.message"
-              label="Mensagem"
-              variant="outlined"
-              :rules="[v => !!v || 'Mensagem é obrigatória']"
-              required
-              rows="4"
-            />
-            <v-text-field
-              v-model="formData.send_at"
-              label="Data de Envio (opcional)"
-              variant="outlined"
-              type="datetime-local"
-            />
+            <v-row>
+              <v-col cols="12" md="6">
+                <v-select
+                  v-model="novaNotificacao.type"
+                  :items="typeOptions.filter(t => t !== 'Todos')"
+                  label="Tipo"
+                  variant="outlined"
+                  :rules="[rules.required]"
+                  required
+                />
+              </v-col>
+              <v-col cols="12" md="6">
+                <v-text-field
+                  v-model="novaNotificacao.recipient"
+                  label="Destinatário"
+                  placeholder="email@exemplo.com"
+                  variant="outlined"
+                  :rules="[rules.required, rules.email]"
+                  required
+                />
+              </v-col>
+              <v-col cols="12">
+                <v-text-field
+                  v-model="novaNotificacao.subject"
+                  label="Assunto"
+                  placeholder="Assunto da notificação"
+                  variant="outlined"
+                  :rules="[rules.required]"
+                  required
+                />
+              </v-col>
+              <v-col cols="12">
+                <v-textarea
+                  v-model="novaNotificacao.message"
+                  label="Mensagem"
+                  placeholder="Conteúdo da notificação"
+                  variant="outlined"
+                  :rules="[rules.required]"
+                  required
+                  rows="4"
+                />
+              </v-col>
+              <v-col cols="12" md="6">
+                <v-select
+                  v-model="novaNotificacao.priority"
+                  :items="['LOW', 'NORMAL', 'HIGH', 'URGENT']"
+                  label="Prioridade"
+                  variant="outlined"
+                  :rules="[rules.required]"
+                  required
+                />
+              </v-col>
+              <v-col cols="12" md="6">
+                <v-text-field
+                  v-model="novaNotificacao.scheduled_at"
+                  label="Agendar para"
+                  type="datetime-local"
+                  variant="outlined"
+                />
+              </v-col>
+            </v-row>
           </v-form>
         </v-card-text>
-        <v-card-actions>
+
+        <v-card-actions class="dialog-actions">
           <v-spacer />
-          <v-btn variant="text" @click="showCreateDialog = false">Cancelar</v-btn>
+          <v-btn variant="outlined" @click="cancelForm" class="cancel-btn">
+            Cancelar
+          </v-btn>
           <v-btn
             color="primary"
-            :loading="notificationsStore.loading"
-            :disabled="!formValid"
             @click="saveNotification"
+            :loading="loading"
+            :disabled="!formValid"
+            class="save-btn"
           >
-            {{ editingNotification ? 'Atualizar' : 'Criar' }}
+            {{ editingNotification ? 'Atualizar' : 'Enviar' }}
           </v-btn>
         </v-card-actions>
       </v-card>
     </v-dialog>
 
     <!-- Dialog de visualização -->
-    <v-dialog v-model="showViewDialog" max-width="800px">
-      <v-card>
-        <v-card-title class="d-flex align-center">
-          <v-icon size="24" color="primary" class="mr-2">mdi-bell</v-icon>
+    <v-dialog v-model="showViewDialog" max-width="700px">
+      <v-card class="view-dialog">
+        <v-card-title class="dialog-title">
+          <v-icon size="24" class="mr-2">mdi-eye</v-icon>
           Detalhes da Notificação
-        </v-card-title>
-        <v-card-text v-if="selectedNotification">
-          <v-row>
-            <v-col cols="12" md="6">
-              <v-list>
-                <v-list-item>
-                  <template #prepend>
-                    <v-icon color="primary">mdi-identifier</v-icon>
-                  </template>
-                  <v-list-item-title>ID</v-list-item-title>
-                  <v-list-item-subtitle>{{ selectedNotification.id }}</v-list-item-subtitle>
-                </v-list-item>
-                <v-list-item>
-                  <template #prepend>
-                    <v-icon color="primary">mdi-account</v-icon>
-                  </template>
-                  <v-list-item-title>Cliente ID</v-list-item-title>
-                  <v-list-item-subtitle>{{ selectedNotification.customer_id }}</v-list-item-subtitle>
-                </v-list-item>
-                <v-list-item>
-                  <template #prepend>
-                    <v-icon :color="notificationsStore.getChannelColor(selectedNotification.channel)">
-                      {{ notificationsStore.getChannelIcon(selectedNotification.channel) }}
-                    </v-icon>
-                  </template>
-                  <v-list-item-title>Canal</v-list-item-title>
-                  <v-list-item-subtitle>{{ notificationsStore.getChannelDisplayName(selectedNotification.channel) }}</v-list-item-subtitle>
-                </v-list-item>
-                <v-list-item>
-                  <template #prepend>
-                    <v-icon :color="notificationsStore.getStatusColor(selectedNotification.status)">
-                      mdi-circle
-                    </v-icon>
-                  </template>
-                  <v-list-item-title>Status</v-list-item-title>
-                  <v-list-item-subtitle>{{ notificationsStore.getStatusDisplayName(selectedNotification.status) }}</v-list-item-subtitle>
-                </v-list-item>
-                <v-list-item>
-                  <template #prepend>
-                    <v-icon color="primary">mdi-calendar</v-icon>
-                  </template>
-                  <v-list-item-title>Criado em</v-list-item-title>
-                  <v-list-item-subtitle>{{ formatDate(selectedNotification.created_at as string, true) }}</v-list-item-subtitle>
-                </v-list-item>
-                <v-list-item v-if="selectedNotification.send_at">
-                  <template #prepend>
-                    <v-icon color="primary">mdi-clock</v-icon>
-                  </template>
-                  <v-list-item-title>Enviar em</v-list-item-title>
-                  <v-list-item-subtitle>{{ formatDate(selectedNotification.send_at as string, true) }}</v-list-item-subtitle>
-                </v-list-item>
-                <v-list-item v-if="selectedNotification.delivered_at">
-                  <template #prepend>
-                    <v-icon color="success">mdi-check-circle</v-icon>
-                  </template>
-                  <v-list-item-title>Entregue em</v-list-item-title>
-                  <v-list-item-subtitle>{{ formatDate(selectedNotification.delivered_at as string, true) }}</v-list-item-subtitle>
-                </v-list-item>
-              </v-list>
-            </v-col>
-            <v-col cols="12" md="6">
-              <v-card variant="outlined">
-                <v-card-title class="text-h6">Conteúdo da Notificação</v-card-title>
-                <v-card-text>
-                  <div class="mb-4">
-                    <strong>Assunto:</strong>
-                    <p class="mt-1">{{ selectedNotification.subject || 'Sem assunto' }}</p>
-                  </div>
-                  <div>
-                    <strong>Mensagem:</strong>
-                    <p class="mt-1">{{ selectedNotification.message }}</p>
-                  </div>
-                </v-card-text>
-              </v-card>
-            </v-col>
-          </v-row>
-        </v-card-text>
-        <v-card-actions>
           <v-spacer />
-          <v-btn variant="text" @click="showViewDialog = false">Fechar</v-btn>
-        </v-card-actions>
+          <v-btn
+            icon="mdi-close"
+            variant="text"
+            @click="showViewDialog = false"
+            class="close-btn"
+          />
+        </v-card-title>
+
+        <v-card-text class="dialog-content">
+          <div class="detail-grid">
+            <div class="detail-item">
+              <div class="detail-label">ID</div>
+              <div class="detail-value font-mono">{{ selectedNotification?.id }}</div>
+            </div>
+            <div class="detail-item">
+              <div class="detail-label">Tipo</div>
+              <div class="detail-value">{{ getTypeText(selectedNotification?.type) }}</div>
+            </div>
+            <div class="detail-item">
+              <div class="detail-label">Destinatário</div>
+              <div class="detail-value">{{ selectedNotification?.recipient }}</div>
+            </div>
+            <div class="detail-item">
+              <div class="detail-label">Prioridade</div>
+              <div class="detail-value">{{ getPriorityText(selectedNotification?.priority) }}</div>
+            </div>
+            <div class="detail-item full-width">
+              <div class="detail-label">Assunto</div>
+              <div class="detail-value">{{ selectedNotification?.subject }}</div>
+            </div>
+            <div class="detail-item full-width">
+              <div class="detail-label">Mensagem</div>
+              <div class="detail-value">{{ selectedNotification?.message }}</div>
+            </div>
+            <div class="detail-item">
+              <div class="detail-label">Status</div>
+              <div class="detail-value">{{ getStatusText(selectedNotification?.status) }}</div>
+            </div>
+            <div class="detail-item">
+              <div class="detail-label">Criada em</div>
+              <div class="detail-value">{{ formatDate(selectedNotification?.created_at) }}</div>
+            </div>
+            <div class="detail-item">
+              <div class="detail-label">Enviada em</div>
+              <div class="detail-value">{{ selectedNotification?.sent_at ? formatDate(selectedNotification.sent_at) : 'Não enviada' }}</div>
+            </div>
+          </div>
+        </v-card-text>
       </v-card>
     </v-dialog>
-
-    <!-- Dialog de confirmação de exclusão -->
-    <AppConfirmDialog
-      v-model="showDeleteDialog"
-      title="Excluir Notificação"
-      message="Tem certeza que deseja excluir esta notificação? Esta ação não pode ser desfeita."
-      confirm-text="Excluir"
-      confirm-color="error"
-      @confirm="confirmDelete"
-    />
   </div>
 </template>
 
 <script setup lang="ts">
-import { ref, reactive, onMounted } from 'vue'
-import { useNotifications } from '@/stores/useNotifications'
-import { useCustomers } from '@/stores/useCustomers'
+import { ref, computed, onMounted } from 'vue'
+import { useSnackbar } from '@/stores/useSnackbar'
 import { formatDate } from '@/utils/formatters'
-import AppDataTable from '@/components/common/AppDataTable.vue'
-import AppConfirmDialog from '@/components/common/AppConfirmDialog.vue'
+import { validateEmail } from '@/utils/validators'
 
-type NotificationChannel = 'EMAIL' | 'SMS' | 'WHATSAPP' | 'PUSH'
+const snackbar = useSnackbar()
 
-const notificationsStore = useNotifications()
-const customersStore = useCustomers()
-
-// Estados
-const searchQuery = ref('')
-const statusFilter = ref('')
-const channelFilter = ref('')
+// Estado
 const showCreateDialog = ref(false)
 const showViewDialog = ref(false)
-const showDeleteDialog = ref(false)
-const formValid = ref(false)
 const editingNotification = ref<any>(null)
 const selectedNotification = ref<any>(null)
-const notificationToDelete = ref<any>(null)
+const searchTerm = ref('')
+const selectedStatus = ref('Todos')
+const selectedType = ref('Todos')
+const loading = ref(false)
+const formValid = ref(false)
 
-// Formulário
-const formData = reactive({
-  customer_id: '',
-  channel: '' as NotificationChannel,
+const novaNotificacao = ref({
+  type: 'EMAIL',
+  recipient: '',
   subject: '',
   message: '',
-  send_at: ''
+  priority: 'NORMAL',
+  scheduled_at: '',
 })
+
+const statusOptions = ['Todos', 'PENDING', 'SENT', 'FAILED', 'CANCELED']
+const typeOptions = ['Todos', 'EMAIL', 'SMS', 'PUSH', 'WEBHOOK']
+
+const rules = {
+  required: (value: any) => !!value || 'Campo obrigatório',
+  email: (value: string) => validateEmail(value) || 'E-mail inválido',
+}
 
 // Headers da tabela
 const headers = [
-  { title: 'Canal', key: 'channel', sortable: false, text: 'Canal', value: 'channel' },
-  { title: 'Assunto', key: 'subject', sortable: false, text: 'Assunto', value: 'subject' },
-  { title: 'Status', key: 'status', sortable: true, text: 'Status', value: 'status' },
-  { title: 'Criado em', key: 'created_at', sortable: true, text: 'Criado em', value: 'created_at' },
-  { title: 'Ações', key: 'actions', sortable: false, text: 'Ações', value: 'actions', width: '120px' }
+  { title: 'ID', key: 'id', sortable: true },
+  { title: 'Tipo', key: 'type', sortable: true },
+  { title: 'Notificação', key: 'subject', sortable: true },
+  { title: 'Destinatário', key: 'recipient', sortable: true },
+  { title: 'Status', key: 'status', sortable: true },
+  { title: 'Criada em', key: 'created_at', sortable: true },
+  { title: 'Ações', key: 'actions', sortable: false },
 ]
 
-// Opções de filtro
-const statusOptions = [
-  { title: 'Na Fila', value: 'QUEUED' },
-  { title: 'Enviada', value: 'SENT' },
-  { title: 'Falhou', value: 'FAILED' },
-  { title: 'Cancelada', value: 'CANCELED' }
-]
+// Dados mockados para teste
+const notifications = ref([
+  {
+    id: 'notif_001',
+    type: 'EMAIL',
+    recipient: 'cliente@exemplo.com',
+    subject: 'Cobrança confirmada',
+    message: 'Sua cobrança foi processada com sucesso. Obrigado!',
+    priority: 'NORMAL',
+    status: 'SENT',
+    created_at: '2024-01-15T10:30:00Z',
+    sent_at: '2024-01-15T10:31:00Z',
+  },
+  {
+    id: 'notif_002',
+    type: 'SMS',
+    recipient: '+5511999999999',
+    subject: 'Lembrete de pagamento',
+    message: 'Lembrete: sua fatura vence em 3 dias.',
+    priority: 'HIGH',
+    status: 'PENDING',
+    created_at: '2024-01-14T14:20:00Z',
+    sent_at: null,
+  },
+  {
+    id: 'notif_003',
+    type: 'PUSH',
+    recipient: 'user_device_token',
+    subject: 'Nova assinatura',
+    message: 'Sua assinatura foi ativada com sucesso!',
+    priority: 'NORMAL',
+    status: 'FAILED',
+    created_at: '2024-01-13T09:15:00Z',
+    sent_at: null,
+  },
+])
 
-const channelOptions = [
-  { title: 'E-mail', value: 'EMAIL' },
-  { title: 'SMS', value: 'SMS' },
-  { title: 'WhatsApp', value: 'WHATSAPP' },
-  { title: 'Push Notification', value: 'PUSH' }
-]
+// Computed
+const filteredNotifications = computed(() => {
+  let filtered = notifications.value
 
-const customerOptions = ref<Array<{ title: string; value: string }>>([])
+  if (searchTerm.value) {
+    const search = searchTerm.value.toLowerCase()
+    filtered = filtered.filter(
+      (notification) =>
+        notification.subject.toLowerCase().includes(search) ||
+        notification.message.toLowerCase().includes(search) ||
+        notification.recipient.toLowerCase().includes(search)
+    )
+  }
+
+  if (selectedStatus.value !== 'Todos') {
+    filtered = filtered.filter((notification) => notification.status === selectedStatus.value)
+  }
+
+  if (selectedType.value !== 'Todos') {
+    filtered = filtered.filter((notification) => notification.type === selectedType.value)
+  }
+
+  return filtered
+})
+
+const sentNotifications = computed(() => notifications.value.filter(n => n.status === 'SENT').length)
+const pendingNotifications = computed(() => notifications.value.filter(n => n.status === 'PENDING').length)
+const failedNotifications = computed(() => notifications.value.filter(n => n.status === 'FAILED').length)
 
 // Métodos
-const handleSearch = () => {
-  notificationsStore.searchNotifications(searchQuery.value || '')
-}
-
-const handleStatusFilter = (value: string) => {
-  if (value && value !== 'CANCELED') {
-    notificationsStore.filterByStatus(value as 'QUEUED' | 'SENT' | 'FAILED')
-  } else {
-    notificationsStore.listNotifications()
-  }
-}
-
-const handleChannelFilter = (value: string) => {
-  if (value) {
-    notificationsStore.filterByChannel(value as NotificationChannel)
-  } else {
-    notificationsStore.listNotifications()
-  }
-}
-
 const clearFilters = () => {
-  searchQuery.value = ''
-  statusFilter.value = ''
-  channelFilter.value = ''
-  notificationsStore.clearFilters()
-  notificationsStore.listNotifications()
+  searchTerm.value = ''
+  selectedStatus.value = 'Todos'
+  selectedType.value = 'Todos'
 }
 
 const viewNotification = (notification: any) => {
@@ -425,99 +487,454 @@ const viewNotification = (notification: any) => {
 
 const editNotification = (notification: any) => {
   editingNotification.value = notification
-  formData.customer_id = notification.customer_id
-  formData.channel = notification.channel
-  formData.subject = notification.subject || ''
-  formData.message = notification.message
-  formData.send_at = notification.send_at ? new Date(notification.send_at).toISOString().slice(0, 16) : ''
+  novaNotificacao.value = { ...notification }
   showCreateDialog.value = true
 }
 
-const deleteNotification = (notification: any) => {
-  notificationToDelete.value = notification
-  showDeleteDialog.value = true
-}
-
-const confirmDelete = async () => {
-  if (notificationToDelete.value) {
-    await notificationsStore.deleteNotification(notificationToDelete.value.id)
-    notificationToDelete.value = null
+const deleteNotification = async (notification: any) => {
+  if (confirm('Tem certeza que deseja excluir esta notificação?')) {
+    loading.value = true
+    try {
+      await new Promise((resolve) => setTimeout(resolve, 1000))
+      const index = notifications.value.findIndex((n) => n.id === notification.id)
+      if (index !== -1) {
+        notifications.value.splice(index, 1)
+        snackbar.success('Notificação excluída com sucesso!')
+      }
+    } catch (error) {
+      snackbar.error('Erro ao excluir notificação')
+    } finally {
+      loading.value = false
+    }
   }
 }
 
 const saveNotification = async () => {
-  const data = {
-    ...formData,
-    send_at: formData.send_at ? new Date(formData.send_at).toISOString() : undefined
+  if (!formValid.value) {
+    snackbar.error('Por favor, preencha todos os campos obrigatórios corretamente.')
+    return
   }
 
-  if (editingNotification.value) {
-    await notificationsStore.updateNotification(editingNotification.value.id, data)
-  } else {
-    await notificationsStore.createNotification(data)
+  loading.value = true
+  try {
+    await new Promise((resolve) => setTimeout(resolve, 1000))
+
+    if (editingNotification.value) {
+      // Editar
+      const index = notifications.value.findIndex((n) => n.id === editingNotification.value.id)
+      if (index !== -1) {
+        notifications.value[index] = {
+          ...editingNotification.value,
+          ...novaNotificacao.value,
+        }
+      }
+      snackbar.success('Notificação atualizada com sucesso!')
+    } else {
+      // Criar
+      const newNotification = {
+        id: `notif_${Date.now()}`,
+        ...novaNotificacao.value,
+        status: 'PENDING',
+        created_at: new Date().toISOString(),
+        sent_at: null,
+      }
+      notifications.value.unshift(newNotification)
+      snackbar.success('Notificação criada com sucesso!')
+    }
+
+    showCreateDialog.value = false
+    resetForm()
+  } catch (error) {
+    snackbar.error('Erro ao salvar notificação')
+  } finally {
+    loading.value = false
   }
-  
-  showCreateDialog.value = false
-  resetForm()
 }
 
 const resetForm = () => {
   editingNotification.value = null
-  formData.customer_id = ''
-  formData.channel = '' as NotificationChannel
-  formData.subject = ''
-  formData.message = ''
-  formData.send_at = ''
+  novaNotificacao.value = {
+    type: 'EMAIL',
+    recipient: '',
+    subject: '',
+    message: '',
+    priority: 'NORMAL',
+    scheduled_at: '',
+  }
+  formValid.value = false
 }
 
-const loadCustomers = async () => {
-  await customersStore.listCustomers()
-  customerOptions.value = customersStore.customers.map(customer => ({
-    title: `${customer.name} (${customer.email})`,
-    value: customer.id
-  }))
+const cancelForm = () => {
+  showCreateDialog.value = false
+  resetForm()
 }
 
-// Carregar dados iniciais
-onMounted(async () => {
-  await Promise.all([
-    notificationsStore.listNotifications(),
-    loadCustomers()
-  ])
+const getStatusColor = (status: string) => {
+  const colors: Record<string, string> = {
+    PENDING: 'warning',
+    SENT: 'success',
+    FAILED: 'error',
+    CANCELED: 'grey',
+  }
+  return colors[status] || 'grey'
+}
+
+const getStatusText = (status: string) => {
+  const texts: Record<string, string> = {
+    PENDING: 'Pendente',
+    SENT: 'Enviada',
+    FAILED: 'Falhou',
+    CANCELED: 'Cancelada',
+  }
+  return texts[status] || status
+}
+
+const getStatusIcon = (status: string) => {
+  const icons: Record<string, string> = {
+    PENDING: 'mdi-clock',
+    SENT: 'mdi-check-circle',
+    FAILED: 'mdi-close-circle',
+    CANCELED: 'mdi-cancel',
+  }
+  return icons[status] || 'mdi-help-circle'
+}
+
+const getTypeColor = (type: string) => {
+  const colors: Record<string, string> = {
+    EMAIL: 'primary',
+    SMS: 'success',
+    PUSH: 'warning',
+    WEBHOOK: 'info',
+  }
+  return colors[type] || 'grey'
+}
+
+const getTypeText = (type: string) => {
+  const texts: Record<string, string> = {
+    EMAIL: 'E-mail',
+    SMS: 'SMS',
+    PUSH: 'Push',
+    WEBHOOK: 'Webhook',
+  }
+  return texts[type] || type
+}
+
+const getTypeIcon = (type: string) => {
+  const icons: Record<string, string> = {
+    EMAIL: 'mdi-email',
+    SMS: 'mdi-message-text',
+    PUSH: 'mdi-bell',
+    WEBHOOK: 'mdi-webhook',
+  }
+  return icons[type] || 'mdi-help-circle'
+}
+
+const getPriorityText = (priority: string) => {
+  const texts: Record<string, string> = {
+    LOW: 'Baixa',
+    NORMAL: 'Normal',
+    HIGH: 'Alta',
+    URGENT: 'Urgente',
+  }
+  return texts[priority] || priority
+}
+
+// Lifecycle
+onMounted(() => {
+  // Carregar dados se necessário
 })
 </script>
 
 <style scoped>
-.notifications-view {
-  padding: 24px;
+.notifications-container {
+  max-width: 1400px;
+  margin: 0 auto;
 }
 
 .page-header {
+  background: linear-gradient(135deg, rgba(255, 255, 255, 0.1), rgba(255, 255, 255, 0.05));
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 16px;
+  padding: 24px;
   margin-bottom: 24px;
+  backdrop-filter: blur(10px);
 }
 
 .header-content {
   display: flex;
   justify-content: space-between;
   align-items: center;
+  gap: 24px;
 }
 
 .header-info {
+  flex: 1;
+}
+
+.page-title {
+  display: flex;
+  align-items: center;
+  font-size: 28px;
+  font-weight: 700;
+  color: white;
+  margin: 0 0 8px 0;
+}
+
+.page-subtitle {
+  font-size: 16px;
+  color: rgba(255, 255, 255, 0.7);
+  margin: 0;
+}
+
+.create-btn {
+  background: linear-gradient(135deg, #007aff 0%, #0055b3 100%);
+  box-shadow: 0 4px 12px rgba(0, 122, 255, 0.3);
+}
+
+.stats-cards {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: 16px;
+  margin-bottom: 24px;
+}
+
+.stat-card {
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 12px;
+  padding: 20px;
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  backdrop-filter: blur(10px);
+  transition: all 0.3s ease;
+}
+
+.stat-card:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 8px 25px rgba(0, 0, 0, 0.2);
+}
+
+.stat-icon {
+  width: 48px;
+  height: 48px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(255, 255, 255, 0.1);
+  border-radius: 12px;
+}
+
+.stat-value {
+  font-size: 24px;
+  font-weight: 700;
+  color: white;
+  margin-bottom: 4px;
+}
+
+.stat-label {
+  font-size: 14px;
+  color: rgba(255, 255, 255, 0.7);
+}
+
+.filters-section {
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 12px;
+  padding: 20px;
+  margin-bottom: 24px;
+  backdrop-filter: blur(10px);
+}
+
+.filters-content {
+  display: flex;
+  gap: 16px;
+  align-items: center;
+}
+
+.search-field {
+  flex: 1;
+  max-width: 300px;
+}
+
+.status-filter,
+.type-filter {
+  max-width: 200px;
+}
+
+.clear-filters-btn {
+  border-color: rgba(255, 255, 255, 0.3);
+  color: rgba(255, 255, 255, 0.8);
+}
+
+.table-section {
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 12px;
+  padding: 20px;
+  backdrop-filter: blur(10px);
+}
+
+.notifications-table {
+  background: transparent;
+}
+
+.id-cell {
+  font-family: 'Monaco', 'Menlo', 'Ubuntu Mono', monospace;
+  font-size: 13px;
+  color: rgba(255, 255, 255, 0.9);
+}
+
+.type-cell,
+.status-cell {
   display: flex;
   align-items: center;
 }
 
-.stats-grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-  gap: 16px;
+.subject-cell {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
 }
 
-.gap-4 {
-  gap: 16px;
+.notification-subject {
+  font-weight: 600;
+  color: white;
 }
 
-.gap-2 {
+.notification-preview {
+  font-size: 12px;
+  color: rgba(255, 255, 255, 0.7);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  max-width: 200px;
+}
+
+.recipient-cell {
+  display: flex;
+  align-items: center;
+  font-size: 14px;
+  color: rgba(255, 255, 255, 0.9);
+}
+
+.date-cell {
+  font-size: 14px;
+  color: rgba(255, 255, 255, 0.8);
+}
+
+.actions-cell {
+  display: flex;
   gap: 8px;
+}
+
+.action-btn {
+  transition: all 0.2s ease;
+}
+
+.action-btn:hover {
+  transform: scale(1.1);
+}
+
+.notification-dialog,
+.view-dialog {
+  background: linear-gradient(135deg, #1f2937 0%, #111827 100%);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.dialog-title {
+  background: linear-gradient(135deg, #007aff 0%, #0055b3 100%);
+  color: white;
+  display: flex;
+  align-items: center;
+}
+
+.dialog-content {
+  padding: 24px;
+}
+
+.dialog-actions {
+  padding: 16px 24px;
+  background: rgba(255, 255, 255, 0.05);
+}
+
+.cancel-btn {
+  border-color: rgba(255, 255, 255, 0.3);
+  color: rgba(255, 255, 255, 0.8);
+}
+
+.save-btn {
+  background: linear-gradient(135deg, #007aff 0%, #0055b3 100%);
+  box-shadow: 0 4px 12px rgba(0, 122, 255, 0.3);
+}
+
+.detail-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+  gap: 20px;
+}
+
+.detail-item {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.detail-item.full-width {
+  grid-column: 1 / -1;
+}
+
+.detail-label {
+  font-size: 14px;
+  color: rgba(255, 255, 255, 0.7);
+  font-weight: 500;
+}
+
+.detail-value {
+  font-size: 16px;
+  color: white;
+  font-weight: 600;
+}
+
+/* Responsividade */
+@media (max-width: 768px) {
+  .header-content {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 16px;
+  }
+
+  .page-title {
+    font-size: 24px;
+  }
+
+  .stats-cards {
+    grid-template-columns: repeat(2, 1fr);
+  }
+
+  .filters-content {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .search-field,
+  .status-filter,
+  .type-filter {
+    max-width: none;
+  }
+}
+
+@media (max-width: 480px) {
+  .stats-cards {
+    grid-template-columns: 1fr;
+  }
+
+  .page-header {
+    padding: 16px;
+  }
+
+  .table-section {
+    padding: 12px;
+  }
 }
 </style>

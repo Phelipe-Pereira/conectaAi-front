@@ -1,169 +1,234 @@
 <template>
-  <div class="parcelamentos-view">
+  <div class="parcelamentos-container">
     <!-- Header da página -->
     <div class="page-header">
       <div class="header-content">
         <div class="header-info">
-          <v-icon size="32" color="primary" class="mr-3">mdi-credit-card-clock</v-icon>
-          <div>
-            <h1 class="text-h4 font-weight-bold">Parcelamentos</h1>
-            <p class="text-subtitle-1 text-medium-emphasis">
-              Gerencie cobranças parceladas e financiamentos
-            </p>
-          </div>
+          <h1 class="page-title">
+            <v-icon size="32" class="mr-3">mdi-credit-card-clock</v-icon>
+            Parcelamentos
+          </h1>
+          <p class="page-subtitle">Gerencie cobranças parceladas e financiamentos da plataforma</p>
         </div>
-        <v-btn color="primary" prepend-icon="mdi-plus" @click="showCreateDialog = true">
+        <v-btn
+          color="primary"
+          prepend-icon="mdi-plus"
+          size="large"
+          @click="showCreateDialog = true"
+          class="create-btn"
+        >
           Novo Parcelamento
         </v-btn>
       </div>
     </div>
 
     <!-- Cards de estatísticas -->
-    <div class="stats-grid mb-6">
-      <v-card>
-        <v-card-text class="text-center">
-          <div class="text-h4 font-weight-bold text-primary">{{ stats.total }}</div>
-          <div class="text-subtitle-2">Total de Parcelamentos</div>
-        </v-card-text>
-      </v-card>
+    <div class="stats-cards">
+      <div class="stat-card">
+        <div class="stat-icon">
+          <v-icon size="24" color="primary">mdi-credit-card-clock</v-icon>
+        </div>
+        <div class="stat-content">
+          <div class="stat-value">{{ stats.total }}</div>
+          <div class="stat-label">Total de Parcelamentos</div>
+        </div>
+      </div>
 
-      <v-card>
-        <v-card-text class="text-center">
-          <div class="text-h4 font-weight-bold text-success">{{ stats.active }}</div>
-          <div class="text-subtitle-2">Ativos</div>
-        </v-card-text>
-      </v-card>
+      <div class="stat-card">
+        <div class="stat-icon">
+          <v-icon size="24" color="success">mdi-check-circle</v-icon>
+        </div>
+        <div class="stat-content">
+          <div class="stat-value">{{ stats.active }}</div>
+          <div class="stat-label">Ativos</div>
+        </div>
+      </div>
 
-      <v-card>
-        <v-card-text class="text-center">
-          <div class="text-h4 font-weight-bold text-warning">{{ stats.pending }}</div>
-          <div class="text-subtitle-2">Pendentes</div>
-        </v-card-text>
-      </v-card>
+      <div class="stat-card">
+        <div class="stat-icon">
+          <v-icon size="24" color="warning">mdi-pause-circle</v-icon>
+        </div>
+        <div class="stat-content">
+          <div class="stat-value">{{ stats.pending }}</div>
+          <div class="stat-label">Pendentes</div>
+        </div>
+      </div>
 
-      <v-card>
-        <v-card-text class="text-center">
-          <div class="text-h4 font-weight-bold text-error">{{ stats.overdue }}</div>
-          <div class="text-subtitle-2">Em Atraso</div>
-        </v-card-text>
-      </v-card>
+      <div class="stat-card">
+        <div class="stat-icon">
+          <v-icon size="24" color="error">mdi-alert-circle</v-icon>
+        </div>
+        <div class="stat-content">
+          <div class="stat-value">{{ stats.overdue }}</div>
+          <div class="stat-label">Em Atraso</div>
+        </div>
+      </div>
     </div>
 
-    <!-- Filtros -->
-    <v-card class="mb-4">
-      <v-card-text>
-        <div class="d-flex align-center justify-space-between flex-wrap gap-4">
-          <v-text-field
-            v-model="searchTerm"
-            prepend-inner-icon="mdi-magnify"
-            placeholder="Buscar parcelamentos..."
-            variant="outlined"
-            density="comfortable"
-            hide-details
-            class="max-width-300"
-          />
+    <!-- Filtros e busca -->
+    <div class="filters-section">
+      <div class="filters-content">
+        <v-text-field
+          v-model="searchTerm"
+          prepend-inner-icon="mdi-magnify"
+          placeholder="Buscar parcelamentos por ID, descrição ou cliente..."
+          variant="outlined"
+          density="compact"
+          hide-details
+          class="search-field"
+        />
 
-          <v-select
-            v-model="selectedStatus"
-            :items="statusOptions"
-            label="Status"
-            variant="outlined"
-            density="comfortable"
-            hide-details
-            class="max-width-200"
-          />
+        <v-select
+          v-model="selectedStatus"
+          :items="statusOptions"
+          placeholder="Status"
+          variant="outlined"
+          density="compact"
+          hide-details
+          class="status-filter"
+        />
 
-          <v-select
-            v-model="selectedInstallments"
-            :items="installmentOptions"
-            label="Parcelas"
-            variant="outlined"
-            density="comfortable"
-            hide-details
-            class="max-width-200"
-          />
-        </div>
-      </v-card-text>
-    </v-card>
+        <v-select
+          v-model="selectedInstallments"
+          :items="installmentOptions"
+          placeholder="Parcelas"
+          variant="outlined"
+          density="compact"
+          hide-details
+          class="installments-filter"
+        />
+
+        <v-btn
+          variant="outlined"
+          prepend-icon="mdi-filter-remove"
+          @click="clearFilters"
+          class="clear-filters-btn"
+        >
+          Limpar Filtros
+        </v-btn>
+      </div>
+    </div>
 
     <!-- Tabela de parcelamentos -->
-    <v-card>
+    <div class="table-section">
       <v-data-table
         :headers="headers"
         :items="parcelamentosFiltrados"
         :loading="loading"
-        :search="searchTerm"
-        class="elevation-1"
+        class="parcelamentos-table"
+        hover
       >
+        <template #item.id="{ item }">
+          <div class="id-cell">
+            <v-icon size="16" color="primary" class="mr-2">mdi-identifier</v-icon>
+            <span class="font-mono">{{ item.id }}</span>
+          </div>
+        </template>
+
         <template #item.total_amount="{ item }">
-          <span class="font-weight-bold">
-            {{ formatCurrency(item.total_amount) }}
-          </span>
-        </template>
-
-        <template #item.installment_amount="{ item }">
-          <span class="font-weight-medium">
-            {{ formatCurrency(item.installment_amount) }}
-          </span>
-        </template>
-
-        <template #item.status="{ item }">
-          <v-chip :color="getStatusColor(item.status)" size="small" variant="tonal">
-            {{ getStatusText(item.status) }}
-          </v-chip>
+          <div class="amount-cell">
+            <span class="font-weight-bold text-success">
+              {{ formatCurrency(item.total_amount) }}
+            </span>
+          </div>
         </template>
 
         <template #item.installments="{ item }">
-          <v-chip :color="getInstallmentColor(item.installments)" size="small" variant="tonal">
+          <v-chip
+            :color="getInstallmentColor(item.installments)"
+            size="small"
+            variant="tonal"
+            class="installment-chip"
+          >
+            <v-icon size="14" class="mr-1">mdi-calendar</v-icon>
             {{ item.installments }}x
           </v-chip>
         </template>
 
+        <template #item.installment_amount="{ item }">
+          <div class="amount-cell">
+            <span class="font-weight-medium">
+              {{ formatCurrency(item.installment_amount) }}
+            </span>
+          </div>
+        </template>
+
+        <template #item.status="{ item }">
+          <v-chip
+            :color="getStatusColor(item.status)"
+            size="small"
+            variant="tonal"
+            class="status-chip"
+          >
+            <v-icon size="14" class="mr-1">
+              {{ getStatusIcon(item.status) }}
+            </v-icon>
+            {{ getStatusText(item.status) }}
+          </v-chip>
+        </template>
+
+        <template #item.customer_id="{ item }">
+          <div class="customer-cell">
+            <v-icon size="16" color="info" class="mr-2">mdi-account</v-icon>
+            <span>{{ item.customer_id }}</span>
+          </div>
+        </template>
+
         <template #item.next_due_date="{ item }">
-          {{ formatDate(item.next_due_date) }}
+          <div class="date-cell">
+            <v-icon size="16" color="warning" class="mr-2">mdi-calendar</v-icon>
+            {{ formatDate(item.next_due_date) }}
+          </div>
         </template>
 
         <template #item.actions="{ item }">
-          <v-btn
-            icon="mdi-eye"
-            size="small"
-            color="info"
-            variant="text"
-            @click="viewParcelamento(item)"
-          />
-          <v-btn
-            icon="mdi-pencil"
-            size="small"
-            color="primary"
-            variant="text"
-            @click="editParcelamento(item)"
-          />
-          <v-btn
-            icon="mdi-pause"
-            size="small"
-            color="warning"
-            variant="text"
-            @click="pauseParcelamento(item)"
-            v-if="item.status === 'ACTIVE'"
-          />
-          <v-btn
-            icon="mdi-play"
-            size="small"
-            color="success"
-            variant="text"
-            @click="resumeParcelamento(item)"
-            v-if="item.status === 'PAUSED'"
-          />
-          <v-btn
-            icon="mdi-delete"
-            size="small"
-            color="error"
-            variant="text"
-            @click="deleteParcelamento(item)"
-          />
+          <div class="actions-cell">
+            <v-btn
+              icon="mdi-eye"
+              size="small"
+              variant="text"
+              color="primary"
+              @click="viewParcelamento(item)"
+              class="action-btn"
+            />
+            <v-btn
+              icon="mdi-pencil"
+              size="small"
+              variant="text"
+              color="warning"
+              @click="editParcelamento(item)"
+              class="action-btn"
+            />
+            <v-btn
+              v-if="item.status === 'ACTIVE'"
+              icon="mdi-pause"
+              size="small"
+              variant="text"
+              color="info"
+              @click="pauseParcelamento(item)"
+              class="action-btn"
+            />
+            <v-btn
+              v-if="item.status === 'PAUSED'"
+              icon="mdi-play"
+              size="small"
+              variant="text"
+              color="success"
+              @click="resumeParcelamento(item)"
+              class="action-btn"
+            />
+            <v-btn
+              icon="mdi-delete"
+              size="small"
+              variant="text"
+              color="error"
+              @click="deleteParcelamento(item)"
+              class="action-btn"
+            />
+          </div>
         </template>
       </v-data-table>
-    </v-card>
+    </div>
 
     <!-- Dialog de criação/edição -->
     <v-dialog v-model="showCreateDialog" max-width="700px">
@@ -172,7 +237,7 @@
           {{ editingParcelamento ? 'Editar Parcelamento' : 'Novo Parcelamento' }}
         </v-card-title>
         <v-card-text>
-          <v-form ref="form" @submit.prevent="saveParcelamento">
+          <v-form ref="form">
             <v-row>
               <v-col cols="12" md="6">
                 <v-text-field
@@ -657,6 +722,23 @@ const getInstallmentColor = (installments: number) => {
   return 'error'
 }
 
+const getStatusIcon = (status: string) => {
+  const icons: Record<string, string> = {
+    ACTIVE: 'mdi-check-circle',
+    PAUSED: 'mdi-pause-circle',
+    COMPLETED: 'mdi-check-circle',
+    OVERDUE: 'mdi-alert-circle',
+    CANCELED: 'mdi-close-circle',
+  }
+  return icons[status] || 'mdi-help-circle'
+}
+
+const clearFilters = () => {
+  searchTerm.value = ''
+  selectedStatus.value = 'Todos'
+  selectedInstallments.value = 'Todos'
+}
+
 // Lifecycle
 onMounted(() => {
   // Carregar dados iniciais se necessário
@@ -664,12 +746,18 @@ onMounted(() => {
 </script>
 
 <style scoped>
-.parcelamentos-view {
-  width: 100%;
+.parcelamentos-container {
+  max-width: 1400px;
+  margin: 0 auto;
 }
 
 .page-header {
+  background: linear-gradient(135deg, rgba(255, 255, 255, 0.1), rgba(255, 255, 255, 0.05));
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 16px;
+  padding: 24px;
   margin-bottom: 24px;
+  backdrop-filter: blur(10px);
 }
 
 .header-content {
@@ -683,17 +771,216 @@ onMounted(() => {
   align-items: center;
 }
 
-.stats-grid {
+.page-title {
+  display: flex;
+  align-items: center;
+  color: #ffffff;
+}
+
+.page-subtitle {
+  margin-top: 4px;
+  color: #b0b0b0;
+  font-size: 0.9em;
+}
+
+.create-btn {
+  margin-left: 15px;
+}
+
+.stats-cards {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
   gap: 16px;
+  margin-bottom: 24px;
 }
 
-.max-width-300 {
-  max-width: 300px;
+.stat-card {
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 12px;
+  padding: 20px;
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  backdrop-filter: blur(10px);
+  transition: all 0.3s ease;
 }
 
-.max-width-200 {
-  max-width: 200px;
+.stat-card:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 8px 25px rgba(0, 0, 0, 0.2);
+}
+
+.stat-icon {
+  width: 48px;
+  height: 48px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(255, 255, 255, 0.1);
+  border-radius: 12px;
+}
+
+.stat-content {
+  text-align: left;
+}
+
+.stat-value {
+  font-size: 1.8em;
+  font-weight: bold;
+  color: #ffffff;
+}
+
+.stat-label {
+  font-size: 0.8em;
+  color: #b0b0b0;
+  margin-top: 5px;
+}
+
+.filters-section {
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 12px;
+  padding: 20px;
+  margin-bottom: 24px;
+  backdrop-filter: blur(10px);
+}
+
+.filters-content {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 15px;
+  align-items: center;
+}
+
+.search-field,
+.status-filter,
+.installments-filter {
+  flex: 1;
+  min-width: 200px;
+}
+
+.clear-filters-btn {
+  margin-left: 15px;
+}
+
+.table-section {
+  background-color: #2d2d2d;
+  padding: 20px;
+  border-radius: 8px;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
+  border: 1px solid #404040;
+}
+
+.parcelamentos-table {
+  border-radius: 8px;
+  overflow: hidden;
+}
+
+.id-cell,
+.amount-cell,
+.customer-cell,
+.date-cell {
+  display: flex;
+  align-items: center;
+}
+
+.id-cell .font-mono {
+  font-family: 'Courier New', Courier, monospace;
+  font-size: 0.9em;
+  color: #b0b0b0;
+}
+
+.amount-cell .font-weight-bold {
+  font-size: 1.2em;
+}
+
+.status-chip,
+.installment-chip {
+  display: flex;
+  align-items: center;
+}
+
+.status-chip .v-icon,
+.installment-chip .v-icon {
+  margin-right: 5px;
+}
+
+.actions-cell {
+  display: flex;
+  gap: 5px;
+}
+
+.action-btn {
+  padding: 5px;
+}
+
+.parcelamento-dialog,
+.view-dialog {
+  background: linear-gradient(135deg, #1f2937 0%, #111827 100%);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.dialog-title {
+  background: linear-gradient(135deg, #007aff 0%, #0055b3 100%);
+  color: white;
+  display: flex;
+  align-items: center;
+}
+
+.dialog-content {
+  padding: 20px;
+}
+
+.dialog-actions {
+  padding: 16px 24px;
+  background: rgba(255, 255, 255, 0.05);
+}
+
+.cancel-btn,
+.save-btn {
+  min-width: 120px;
+}
+
+.view-dialog .close-btn {
+  margin-left: 10px;
+}
+
+.details-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+  gap: 15px;
+}
+
+.detail-item {
+  display: flex;
+  align-items: center;
+}
+
+.detail-label {
+  font-size: 0.8em;
+  color: #b0b0b0;
+  font-weight: bold;
+  min-width: 100px;
+}
+
+.detail-value {
+  font-size: 1em;
+  color: #ffffff;
+  font-weight: normal;
+}
+
+.detail-value.font-weight-bold {
+  font-weight: bold;
+}
+
+.detail-value.font-mono {
+  font-family: 'Courier New', Courier, monospace;
+  font-size: 0.9em;
+  color: #b0b0b0;
+}
+
+.detail-item.full-width {
+  grid-column: 1 / -1;
 }
 </style>

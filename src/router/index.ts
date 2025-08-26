@@ -62,6 +62,16 @@ const router = createRouter({
           component: () => import('@/views/WebhooksView.vue'),
         },
         {
+          path: 'notifications',
+          name: 'notifications',
+          component: () => import('@/views/NotificationsView.vue'),
+        },
+        {
+          path: 'gateways',
+          name: 'gateways',
+          component: () => import('@/views/GatewaysView.vue'),
+        },
+        {
           path: 'configuracoes',
           name: 'configuracoes',
           component: () => import('@/views/ConfiguracoesView.vue'),
