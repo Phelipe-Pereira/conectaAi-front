@@ -163,7 +163,7 @@ const deleteWebhook = (webhook: WebhookEndpoint) => {
 }
 
 const confirmDelete = async () => {
-  if (selectedWebhook.value) {
+  if (selectedWebhook.value?.id) {
     try {
       await webhooksStore.deleteWebhook(selectedWebhook.value.id)
       showDeleteDialog.value = false
@@ -176,15 +176,15 @@ const confirmDelete = async () => {
 
 const saveWebhook = async () => {
   try {
-    if (isEditing.value && selectedWebhook.value) {
+    if (isEditing.value && selectedWebhook.value?.id) {
       await webhooksStore.updateWebhook(selectedWebhook.value.id, {
         url: form.value.url,
-        enabled_events: form.value.enabled_events,
+        enabled_events: form.value.enabled_events as any,
       })
     } else {
       await webhooksStore.createWebhook({
         url: form.value.url,
-        enabled_events: form.value.enabled_events,
+        enabled_events: form.value.enabled_events as any,
       })
     }
     cancelForm()
@@ -331,7 +331,10 @@ onMounted(() => {
         <template #item.enabled_events="{ item }">
           <div class="events-cell">
             <v-chip
-              v-for="event in (item.enabled_events || []).slice(0, 2)"
+              v-for="event in (Array.isArray(item.enabled_events) ? item.enabled_events : []).slice(
+                0,
+                2,
+              )"
               :key="event"
               size="small"
               :color="getEventColor(event)"
@@ -341,19 +344,19 @@ onMounted(() => {
               {{ getEventDisplayName(event) }}
             </v-chip>
             <v-chip
-              v-if="(item.enabled_events || []).length > 2"
+              v-if="(Array.isArray(item.enabled_events) ? item.enabled_events : []).length > 2"
               size="small"
               color="grey"
               variant="tonal"
             >
-              +{{ (item.enabled_events || []).length - 2 }}
+              +{{ (Array.isArray(item.enabled_events) ? item.enabled_events : []).length - 2 }}
             </v-chip>
           </div>
         </template>
 
         <template #item.created_at="{ item }">
           <div class="date-cell">
-            {{ formatDate(item.created_at) }}
+            {{ formatDate(item.created_at as string) }}
           </div>
         </template>
 

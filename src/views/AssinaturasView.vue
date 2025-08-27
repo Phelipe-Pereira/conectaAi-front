@@ -922,11 +922,11 @@ onMounted(() => {
 }
 
 .table-section {
-  background-color: #2d2d2d;
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 12px;
   padding: 20px;
-  border-radius: 8px;
-  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
-  border: 1px solid #404040;
+  backdrop-filter: blur(10px);
 }
 
 .assinaturas-table {
@@ -983,21 +983,17 @@ onMounted(() => {
   padding: 5px;
 }
 
-.assinatura-dialog {
-  border-radius: 10px;
-  overflow: hidden;
-  background-color: #2d2d2d;
-  color: #ffffff;
+.assinatura-dialog,
+.view-dialog {
+  background: linear-gradient(135deg, #1f2937 0%, #111827 100%);
+  border: 1px solid rgba(255, 255, 255, 0.1);
 }
 
 .dialog-title {
+  background: linear-gradient(135deg, #007aff 0%, #0055b3 100%);
+  color: white;
   display: flex;
   align-items: center;
-  background-color: #1e1e1e;
-  padding: 15px 20px;
-  font-size: 1.1em;
-  font-weight: bold;
-  color: #ffffff;
 }
 
 .dialog-content {
@@ -1005,9 +1001,8 @@ onMounted(() => {
 }
 
 .dialog-actions {
-  padding: 15px 20px;
-  background-color: #1e1e1e;
-  border-top: 1px solid #404040;
+  padding: 16px 24px;
+  background: rgba(255, 255, 255, 0.05);
 }
 
 .cancel-btn,
@@ -1015,30 +1010,7 @@ onMounted(() => {
   min-width: 120px;
 }
 
-.view-dialog {
-  border-radius: 10px;
-  overflow: hidden;
-  background-color: #2d2d2d;
-  color: #ffffff;
-}
 
-.view-dialog .dialog-title {
-  background-color: #1e1e1e;
-  padding: 15px 20px;
-  font-size: 1.1em;
-  font-weight: bold;
-  color: #ffffff;
-}
-
-.view-dialog .dialog-content {
-  padding: 20px;
-}
-
-.view-dialog .dialog-actions {
-  padding: 15px 20px;
-  background-color: #1e1e1e;
-  border-top: 1px solid #404040;
-}
 
 .view-dialog .close-btn {
   margin-left: 10px;

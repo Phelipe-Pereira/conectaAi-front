@@ -691,11 +691,8 @@ onMounted(() => {
 
 <style scoped>
 .cobrancas-container {
-  width: 100%;
-  padding: 24px;
-  background-color: #1e1e1e;
-  min-height: 100vh;
-  color: #ffffff;
+  max-width: 1400px;
+  margin: 0 auto;
 }
 
 .page-header {
@@ -831,14 +828,18 @@ onMounted(() => {
   border-bottom: 1px solid #404040;
 }
 
+.cobrancas-table {
+  background: transparent;
+}
+
 .cobrancas-table th {
-  background-color: #1e1e1e;
+  background: rgba(255, 255, 255, 0.05);
   font-weight: bold;
   color: #ffffff;
 }
 
 .cobrancas-table tr:hover {
-  background-color: #404040;
+  background: rgba(255, 255, 255, 0.05);
 }
 
 .id-cell {
@@ -886,25 +887,26 @@ onMounted(() => {
   padding: 8px;
 }
 
-.cobranca-dialog {
-  padding: 24px;
-  background-color: #2d2d2d;
-  color: #ffffff;
+.cobranca-dialog,
+.view-dialog {
+  background: linear-gradient(135deg, #1f2937 0%, #111827 100%);
+  border: 1px solid rgba(255, 255, 255, 0.1);
 }
 
 .dialog-title {
+  background: linear-gradient(135deg, #007aff 0%, #0055b3 100%);
+  color: white;
   display: flex;
   align-items: center;
-  margin-bottom: 20px;
-  color: #ffffff;
 }
 
 .dialog-content {
-  padding: 0;
+  padding: 24px;
 }
 
 .dialog-actions {
-  padding-top: 0;
+  padding: 16px 24px;
+  background: rgba(255, 255, 255, 0.05);
 }
 
 .cancel-btn {
@@ -913,12 +915,6 @@ onMounted(() => {
 
 .save-btn {
   margin-left: 12px;
-}
-
-.view-dialog {
-  padding: 24px;
-  background-color: #2d2d2d;
-  color: #ffffff;
 }
 
 .details-grid {

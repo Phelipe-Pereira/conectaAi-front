@@ -18,7 +18,7 @@
 
       <!-- Breadcrumb -->
       <v-breadcrumbs
-        v-if="$route.meta.breadcrumb"
+        v-if="$route.meta.breadcrumb && Array.isArray($route.meta.breadcrumb)"
         :items="$route.meta.breadcrumb"
         class="d-none d-lg-flex"
         color="white"

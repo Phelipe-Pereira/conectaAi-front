@@ -8,11 +8,7 @@ interface RetryConfig extends InternalAxiosRequestConfig {
   _retryCount?: number
 }
 
-// Interface para erro mock
-interface MockError extends AxiosError {
-  isMock?: boolean
-  response?: AxiosResponse
-}
+
 
 // Configuração base do Axios
 const http: AxiosInstance = axios.create({
