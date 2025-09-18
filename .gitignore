@@ -7,13 +7,16 @@ yarn-error.log*
 pnpm-debug.log*
 lerna-debug.log*
 
+# Dependencies
 node_modules
-.DS_Store
+
+# Build outputs
 dist
 dist-ssr
 coverage
 *.local
 
+# Testing
 /cypress/videos/
 /cypress/screenshots/
 
@@ -27,6 +30,7 @@ coverage
 *.sln
 *.sw?
 
+# TypeScript
 *.tsbuildinfo
 
 # Local Netlify folder
@@ -36,3 +40,48 @@ coverage
 .env
 .env.local
 .env.*.local
+
+# Documentation files (not needed for site to run)
+*.md
+!README.md
+DOCUMENTACAO_ACADEMICA.md
+README_Diagrama_Casos_Uso.md
+CURSOR_TASK.md
+
+# Diagram files
+*.puml
+*.svg
+!src/assets/*.svg
+!public/*.svg
+
+# API specification (not needed for runtime)
+conectaai-public-v1-api.yaml
+
+# Deployment configs (not needed for runtime)
+netlify.toml
+vercel.json
+firebase.json
+
+# System files
+.DS_Store
+Thumbs.db
+
+# Temporary files
+*.tmp
+*.temp
+*.bak
+*.backup
+
+# IDE specific files
+*.swp
+*.swo
+*~
+
+# OS generated files
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Thumbs.db
