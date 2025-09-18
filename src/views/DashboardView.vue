@@ -1,14 +1,12 @@
 <script setup>
 import { ref, computed, onMounted } from 'vue'
-import { Line, Bar, Doughnut } from 'vue-chartjs'
+import { Line } from 'vue-chartjs'
 import {
   Chart as ChartJS,
   CategoryScale,
   LinearScale,
   PointElement,
   LineElement,
-  BarElement,
-  ArcElement,
   Title,
   Tooltip,
   Legend,
@@ -20,8 +18,6 @@ ChartJS.register(
   LinearScale,
   PointElement,
   LineElement,
-  BarElement,
-  ArcElement,
   Title,
   Tooltip,
   Legend,
@@ -68,53 +64,6 @@ const receitaMensal = ref({
   ],
 })
 
-const vendasPorCategoria = ref({
-  labels: ['Smartphones', 'Notebooks', 'Tablets', 'Acessórios', 'Smart TVs'],
-  datasets: [
-    {
-      data: [35, 25, 20, 15, 5],
-      backgroundColor: ['#007AFF', '#4CAF50', '#FF9800', '#9C27B0', '#F44336'],
-      borderColor: '#ffffff',
-      borderWidth: 2,
-    },
-  ],
-})
-
-const crescimentoMensal = ref({
-  labels: ['Jan', 'Fev', 'Mar', 'Abr', 'Mai', 'Jun', 'Jul', 'Ago', 'Set', 'Out', 'Nov', 'Dez'],
-  datasets: [
-    {
-      label: 'Crescimento (%)',
-      data: [0, 26.4, -10.1, 33.1, 16.9, 15.8, -8.6, 22.6, 8.7, -7.4, 19.4, 21.7],
-      backgroundColor: [
-        '#4CAF50',
-        '#4CAF50',
-        '#F44336',
-        '#4CAF50',
-        '#4CAF50',
-        '#4CAF50',
-        '#F44336',
-        '#4CAF50',
-        '#4CAF50',
-        '#F44336',
-        '#4CAF50',
-        '#4CAF50',
-      ],
-      borderColor: '#ffffff',
-      borderWidth: 1,
-      borderRadius: 4,
-    },
-  ],
-})
-
-const produtosMaisVendidos = [
-  { nome: 'iPhone 15 Pro', vendas: 156, receita: 234000 },
-  { nome: 'MacBook Air M2', vendas: 89, receita: 178000 },
-  { nome: 'Samsung Galaxy S24', vendas: 134, receita: 201000 },
-  { nome: 'iPad Pro 12.9"', vendas: 67, receita: 134000 },
-  { nome: 'AirPods Pro', vendas: 234, receita: 117000 },
-]
-
 const estatisticas = ref({
   vendasTotal: 0,
   receitaTotal: 0,
@@ -139,10 +88,6 @@ const calcularEstatisticas = () => {
   estatisticas.value.crescimentoVendas = Math.round(crescimentoVendas * 10) / 10
   estatisticas.value.crescimentoReceita = Math.round(crescimentoReceita * 10) / 10
 }
-
-const maxVendas = computed(() => {
-  return Math.max(...produtosMaisVendidos.map((p) => p.vendas))
-})
 
 const chartOptions = {
   responsive: true,
@@ -361,47 +306,6 @@ onMounted(() => {
         <h3>Receita Mensal</h3>
         <div class="chart-container">
           <Line :data="receitaMensal" :options="chartOptions" />
-        </div>
-      </div>
-
-      <div class="chart-card">
-        <h3>Crescimento Mensal</h3>
-        <div class="chart-container">
-          <Bar :data="crescimentoMensal" :options="barChartOptions" />
-        </div>
-      </div>
-
-      <div class="chart-card">
-        <h3>Vendas por Categoria</h3>
-        <div class="chart-container">
-          <Doughnut :data="vendasPorCategoria" :options="doughnutOptions" />
-        </div>
-      </div>
-    </div>
-
-    <div class="products-section">
-      <h2>Produtos Mais Vendidos</h2>
-      <div class="products-grid">
-        <div v-for="produto in produtosMaisVendidos" :key="produto.nome" class="product-card">
-          <div class="product-info">
-            <h3 class="product-name">{{ produto.nome }}</h3>
-            <div class="product-stats">
-              <div class="product-sales">
-                <span class="stat-label">Vendas:</span>
-                <span class="stat-value">{{ produto.vendas }}</span>
-              </div>
-              <div class="product-revenue">
-                <span class="stat-label">Receita:</span>
-                <span class="stat-value">R$ {{ produto.receita.toLocaleString('pt-BR') }}</span>
-              </div>
-            </div>
-          </div>
-          <div class="product-bar-container">
-            <div
-              class="product-bar"
-              :style="{ width: (produto.vendas / maxVendas) * 100 + '%' }"
-            ></div>
-          </div>
         </div>
       </div>
     </div>
