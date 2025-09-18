@@ -4,7 +4,7 @@ import { ref, onMounted } from 'vue'
 const userProfile = ref({
   nome: 'João Silva',
   email: 'joao@conectaai.com',
-  empresa: 'ConectaAI Ltda',
+  empresa: 'Conecta Ai Ltda',
   telefone: '(11) 99999-9999',
   cargo: 'Administrador',
   dataCadastro: '15/03/2024',

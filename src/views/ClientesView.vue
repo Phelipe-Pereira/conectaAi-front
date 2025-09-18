@@ -87,7 +87,7 @@ const filteredClientes = computed(() => {
       (cliente) =>
         cliente.name.toLowerCase().includes(search) ||
         cliente.email.toLowerCase().includes(search) ||
-        cliente.document.includes(search)
+        cliente.document.includes(search),
     )
   }
 
@@ -214,9 +214,7 @@ onMounted(() => {
             <v-icon size="32" class="mr-3">mdi-account-group</v-icon>
             Clientes
           </h1>
-          <p class="page-subtitle">
-            Gerencie seus clientes e informações de pagamento
-          </p>
+          <p class="page-subtitle">Gerencie seus clientes e informações de pagamento</p>
         </div>
         <v-btn
           color="primary"
@@ -453,9 +451,7 @@ onMounted(() => {
 
         <v-card-actions class="dialog-actions">
           <v-spacer />
-          <v-btn variant="outlined" @click="cancelForm" class="cancel-btn">
-            Cancelar
-          </v-btn>
+          <v-btn variant="outlined" @click="cancelForm" class="cancel-btn"> Cancelar </v-btn>
           <v-btn
             color="primary"
             @click="saveCliente"

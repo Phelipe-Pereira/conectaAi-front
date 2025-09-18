@@ -1,7 +1,7 @@
 <template>
   <v-app>
     <!-- App Bar -->
-    <v-app-bar app color="primary" dark elevation="0" class="px-0">
+    <v-app-bar app color="transparent" dark elevation="0" class="px-0 custom-header">
       <v-app-bar-nav-icon @click="toggleDrawer" class="d-md-none" />
 
       <!-- Toggle button para desktop -->
@@ -10,8 +10,13 @@
       </v-btn>
 
       <v-toolbar-title class="d-flex align-center">
-        <v-icon size="32" class="mr-3">mdi-credit-card-multiple</v-icon>
-        <span class="text-h6 font-weight-bold">ConectaAI</span>
+        <img
+          src="@/assets/logo.svg"
+          alt="Conecta Ai Logo"
+          class="mr-3"
+          style="width: 32px; height: 32px"
+        />
+        <span class="text-h6 font-weight-bold">Conecta Ai</span>
       </v-toolbar-title>
 
       <v-spacer />
@@ -85,7 +90,7 @@
               <v-icon size="16" class="mr-2">mdi-information</v-icon>
               Versão 1.0.0
             </div>
-            <div class="text-caption">© 2024 ConectaAI</div>
+            <div class="text-caption">© 2024 Conecta Ai</div>
           </div>
         </div>
       </template>
@@ -295,6 +300,18 @@ watch(route, () => {
     opacity: 1;
     transform: translateX(0);
   }
+}
+
+/* Header personalizado */
+.custom-header {
+  background: linear-gradient(135deg, #1a1a2e 0%, #16213e 50%, #0f3460 100%) !important;
+  border-bottom: 1px solid rgba(0, 122, 255, 0.2);
+  backdrop-filter: blur(10px);
+  box-shadow: 0 2px 20px rgba(0, 122, 255, 0.1);
+}
+
+.custom-header .v-toolbar__content {
+  background: transparent;
 }
 
 /* Scrollbar personalizada */

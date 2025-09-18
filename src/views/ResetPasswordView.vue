@@ -36,7 +36,7 @@ const goBackToLogin = () => {
   <div class="reset-container">
     <div class="reset-content">
       <div class="reset-header">
-        <img src="@/assets/logo.svg" alt="Middleware Multi-Gateways Logo" class="logo" />
+        <img src="@/assets/logo.svg" alt="Conecta Ai Logo" class="logo" />
         <h1>Redefinir Senha</h1>
         <p class="reset-subtitle">
           Digite seu email e enviaremos um link para redefinir sua senha.

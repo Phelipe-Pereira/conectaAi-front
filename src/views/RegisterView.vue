@@ -32,7 +32,7 @@ const validatePhone = (phone) => {
 
 const formatPhone = () => {
   let value = formData.value.telefone.replace(/\D/g, '')
-  
+
   if (value.length <= 2) {
     formData.value.telefone = `(${value}`
   } else if (value.length <= 7) {
@@ -114,8 +114,8 @@ const goToLogin = () => {
   <div class="register-container">
     <div class="register-content">
       <div class="register-header">
-        <img src="@/assets/logo.svg" alt="Middleware Multi-Gateways Logo" class="logo" />
-        <h1>Crie sua conta no ConectaAI</h1>
+        <img src="@/assets/logo.svg" alt="Conecta Ai Logo" class="logo" />
+        <h1>Crie sua conta no Conecta Ai</h1>
         <p class="register-subtitle">
           Comece sua jornada de sucesso no gerenciamento de pagamentos
         </p>

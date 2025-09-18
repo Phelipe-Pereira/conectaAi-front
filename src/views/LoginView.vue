@@ -64,8 +64,8 @@ const goToResetPassword = () => {
   <div class="login-container">
     <div class="login-content">
       <div class="login-header">
-        <img src="@/assets/logo.svg" alt="Middleware Multi-Gateways Logo" class="logo" />
-        <h1>Bem vindo ao ConectaAI</h1>
+        <img src="@/assets/logo.svg" alt="Conecta Ai Logo" class="logo" />
+        <h1>Bem vindo ao Conecta Ai</h1>
         <p class="login-subtitle">Faça login para acessar o sistema</p>
       </div>
 

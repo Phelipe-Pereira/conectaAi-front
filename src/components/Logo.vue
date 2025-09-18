@@ -1,7 +1,7 @@
 <template>
   <div class="logo" :class="{ 'logo-small': small }">
-    <img src="@/assets/logo.svg" alt="Middleware Multi-Gateways Logo" class="logo-icon" />
-    <span class="logo-text" v-if="!small">Middleware Multi-Gateways</span>
+    <img src="@/assets/logo.svg" alt="Conecta Ai Logo" class="logo-icon" />
+    <span class="logo-text" v-if="!small">Conecta Ai</span>
   </div>
 </template>
 

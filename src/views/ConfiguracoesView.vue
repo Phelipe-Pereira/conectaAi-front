@@ -3,7 +3,7 @@ import { ref } from 'vue'
 
 const configuracoes = ref({
   empresa: {
-    nome: 'ConectaAI',
+    nome: 'Conecta Ai',
     cnpj: '12.345.678/0001-90',
     email: 'contato@conectaai.com',
     telefone: '(11) 99999-9999',

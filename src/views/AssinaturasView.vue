@@ -824,20 +824,22 @@ onMounted(() => {
 }
 
 .header-info {
-  display: flex;
-  align-items: center;
+  flex: 1;
 }
 
 .page-title {
   display: flex;
   align-items: center;
-  color: #ffffff;
+  font-size: 28px;
+  font-weight: 700;
+  color: white;
+  margin: 0 0 8px 0;
 }
 
 .page-subtitle {
-  margin-top: 4px;
-  color: #b0b0b0;
-  font-size: 0.9em;
+  font-size: 16px;
+  color: rgba(255, 255, 255, 0.7);
+  margin: 0;
 }
 
 .create-btn {
@@ -1009,8 +1011,6 @@ onMounted(() => {
 .save-btn {
   min-width: 120px;
 }
-
-
 
 .view-dialog .close-btn {
   margin-left: 10px;

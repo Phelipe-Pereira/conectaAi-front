@@ -67,8 +67,8 @@ onUnmounted(() => {
     <aside class="sidebar" :class="{ 'sidebar-open': isOpen, 'sidebar-collapsed': !isOpen }">
       <div class="sidebar-header">
         <div class="brand">
-          <img src="@/assets/logo.svg" alt="ConectaAI Logo" class="logo" />
-          <span class="brand-name" v-if="isOpen">ConectaAI</span>
+          <img src="@/assets/logo.svg" alt="Conecta Ai Logo" class="logo" />
+          <span class="brand-name" v-if="isOpen">Conecta Ai</span>
         </div>
       </div>
 
@@ -85,7 +85,12 @@ onUnmounted(() => {
 
           <!-- Subseções para Configurações -->
           <div
-            v-if="item.subItems && isOpen && typeof activeRoute === 'string' && activeRoute.startsWith('configuracoes')"
+            v-if="
+              item.subItems &&
+              isOpen &&
+              typeof activeRoute === 'string' &&
+              activeRoute.startsWith('configuracoes')
+            "
             class="sub-nav"
           >
             <button

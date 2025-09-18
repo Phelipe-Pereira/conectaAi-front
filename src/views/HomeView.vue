@@ -48,7 +48,10 @@ const goToAuthOrDashboard = () => {
     <header class="header">
       <div class="container">
         <div class="header-content">
-          <div class="logo">ConectaAI</div>
+          <div class="logo">
+            <img src="@/assets/logo.svg" alt="Conecta Ai Logo" class="logo-icon" />
+            <span>Conecta Ai</span>
+          </div>
           <div class="header-actions">
             <button class="btn btn-outline" @click="goToLogin">Login</button>
             <button class="btn btn-outline" @click="goToRegister">Registrar-se</button>
@@ -117,7 +120,7 @@ const goToAuthOrDashboard = () => {
     <!-- Partnership Section -->
     <section class="partnership">
       <div class="container">
-        <h2>Seja parceiro da ConectaAI e transforme a gestão de dados do seu e-commerce.</h2>
+        <h2>Seja parceiro da Conecta Ai e transforme a gestão de dados do seu e-commerce.</h2>
         <div class="partnership-grid">
           <div class="partnership-card">
             <div class="partnership-icon">
@@ -179,7 +182,7 @@ const goToAuthOrDashboard = () => {
     <footer class="footer">
       <div class="container">
         <div class="footer-content">
-          <div class="footer-logo">ConectaAI</div>
+          <div class="footer-logo">Conecta Ai</div>
           <div class="footer-links">
             <div class="footer-column">
               <h4>Segurança</h4>
@@ -215,12 +218,13 @@ const goToAuthOrDashboard = () => {
 
 .header {
   padding: 20px 0;
-  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
-  background: rgba(10, 10, 10, 0.95);
+  border-bottom: 1px solid rgba(0, 122, 255, 0.2);
+  background: linear-gradient(135deg, #1a1a2e 0%, #16213e 50%, #0f3460 100%);
   backdrop-filter: blur(10px);
   position: sticky;
   top: 0;
   z-index: 100;
+  box-shadow: 0 2px 20px rgba(0, 122, 255, 0.1);
 }
 
 .header-content {
@@ -230,6 +234,9 @@ const goToAuthOrDashboard = () => {
 }
 
 .logo {
+  display: flex;
+  align-items: center;
+  gap: 12px;
   font-size: 28px;
   font-weight: 800;
   color: white;
@@ -237,9 +244,19 @@ const goToAuthOrDashboard = () => {
   transition: all 0.3s ease;
 }
 
+.logo-icon {
+  width: 32px;
+  height: 32px;
+  transition: all 0.3s ease;
+}
+
 .logo:hover {
   text-shadow: 0 0 30px rgba(0, 122, 255, 0.5);
   transform: scale(1.05);
+}
+
+.logo:hover .logo-icon {
+  transform: scale(1.1);
 }
 
 .header-actions {
