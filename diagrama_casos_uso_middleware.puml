@@ -1,102 +1,186 @@
-@startuml Middleware Multigateways de Pagamento
+@startuml ConectaAi_Casos_Uso
 
 skinparam backgroundColor #FFFFFF
 skinparam actorStyle awesome
+skinparam packageStyle rectangle
 
-' Definição de cores por fase
+' Definição de cores
 skinparam usecase {
     BackgroundColor #E8F4FD
-    BorderColor #0066CC
-    ArrowColor #0066CC
+    BorderColor #007AFF
+    ArrowColor #007AFF
 }
 
-title Diagrama de Casos de Uso - Middleware Multigateways de Pagamento
+title Diagrama de Casos de Uso - Conecta Ai Gateway\nBackend Java 21 + Spring Boot 3.5.5
 
 ' Definição dos atores
-actor "Sistema Cliente" as SC #0066CC
-actor "Administrador do Sistema" as AS #FF6600
-actor "Gateway de Pagamento" as GP #00CC66
+actor "Sistema Cliente" as SC
+actor "Administrador" as AS
+actor "Gateway de Pagamento" as GP
 
 ' Definição do sistema
-rectangle "Middleware Multigateways de Pagamento" {
-    ' FASE 1 - Autenticação e Configuração Básica (Azul)
-    usecase "Cadastrar novo gateway" as UC5 #87CEEB
-    usecase "Configurar ambiente sandbox" as UC8 #87CEEB
+rectangle "Conecta Ai Gateway" {
     
-    ' FASE 2 - Gestão de Usuários e Dashboard (Verde)
-    usecase "Visualizar logs e histórico de requisições" as UC7 #90EE90
-    usecase "Definir regras de prioridade e fallback" as UC6 #90EE90
+    package "Gestão de Clientes" {
+        usecase "UC001: Cadastrar Cliente" as UC001
+        usecase "UC002: Consultar Cliente" as UC002
+        usecase "UC003: Atualizar Cliente" as UC003
+        usecase "UC004: Excluir Cliente" as UC004
+    }
     
-    ' FASE 3 - Integração com Gateways (Laranja)
-    usecase "Enviar requisição de pagamento" as UC1 #FFB347
-    usecase "Receber requisição formatada" as UC9 #FFB347
-    usecase "Retornar status de pagamento" as UC10 #FFB347
+    package "Gestão de Pagamentos" {
+        usecase "UC005: Criar Pagamento" as UC005
+        usecase "UC006: Consultar Pagamento" as UC006
+        usecase "UC007: Cancelar Pagamento" as UC007
+        usecase "UC008: Processar Webhook" as UC008
+    }
     
-    ' FASE 4 - Processamento e Resposta (Vermelho)
-    usecase "Consultar status da transação" as UC2 #FF6B6B
-    usecase "Receber resposta padronizada" as UC3 #FF6B6B
-    usecase "Receber fallback automático" as UC4 #FF6B6B
+    package "Gestão de Assinaturas" {
+        usecase "UC009: Criar Assinatura" as UC009
+        usecase "UC010: Consultar Assinatura" as UC010
+        usecase "UC011: Pausar Assinatura" as UC011
+        usecase "UC012: Retomar Assinatura" as UC012
+        usecase "UC013: Cancelar Assinatura" as UC013
+    }
     
-    ' FASE 5 - Testes e Simulação (Roxo)
-    usecase "Simular falha para fallback" as UC11 #DDA0DD
+    package "Gestão de Estornos" {
+        usecase "UC014: Solicitar Estorno" as UC014
+        usecase "UC015: Consultar Estorno" as UC015
+        usecase "UC016: Processar Estorno" as UC016
+    }
+    
+    package "Gestão de Webhooks" {
+        usecase "UC017: Receber Webhook Asaas" as UC017
+        usecase "UC018: Receber Webhook Stripe" as UC018
+        usecase "UC019: Receber Webhook Mercado Pago" as UC019
+        usecase "UC020: Processar Evento Webhook" as UC020
+        usecase "UC021: Validar Assinatura Webhook" as UC021
+    }
+    
+    package "Controle de Idempotência" {
+        usecase "UC022: Verificar Idempotência" as UC022
+        usecase "UC023: Salvar Resposta Idempotente" as UC023
+        usecase "UC024: Limpar Chaves Expiradas" as UC024
+    }
+    
+    package "Administração do Sistema" {
+        usecase "UC025: Configurar Gateway" as UC025
+        usecase "UC026: Selecionar Provider" as UC026
+        usecase "UC027: Monitorar Saúde" as UC027
+        usecase "UC028: Visualizar Métricas" as UC028
+        usecase "UC029: Processar Mensagens Assíncronas" as UC029
+    }
 }
 
 ' Relacionamentos do Sistema Cliente
-SC --> UC1 : <<include>>
-SC --> UC2 : <<include>>
-UC1 --> UC3 : <<extend>>
-UC2 --> UC3 : <<extend>>
-UC1 --> UC4 : <<extend>>
-UC2 --> UC4 : <<extend>>
+SC --> UC001 : <<include>>
+SC --> UC002 : <<include>>
+SC --> UC003 : <<include>>
+SC --> UC004 : <<include>>
+SC --> UC005 : <<include>>
+SC --> UC006 : <<include>>
+SC --> UC007 : <<include>>
+SC --> UC009 : <<include>>
+SC --> UC010 : <<include>>
+SC --> UC011 : <<include>>
+SC --> UC012 : <<include>>
+SC --> UC013 : <<include>>
+SC --> UC014 : <<include>>
+SC --> UC015 : <<include>>
 
-' Relacionamentos do Administrador do Sistema
-AS --> UC5 : <<include>>
-AS --> UC6 : <<include>>
-AS --> UC7 : <<include>>
-AS --> UC8 : <<include>>
+' Relacionamentos do Administrador
+AS --> UC025 : <<include>>
+AS --> UC026 : <<include>>
+AS --> UC027 : <<include>>
+AS --> UC028 : <<include>>
+AS --> UC029 : <<include>>
 
 ' Relacionamentos do Gateway de Pagamento
-GP --> UC9 : <<include>>
-GP --> UC10 : <<include>>
-GP --> UC11 : <<extend>>
+GP --> UC005 : <<include>>
+GP --> UC006 : <<include>>
+GP --> UC007 : <<include>>
+GP --> UC008 : <<include>>
+GP --> UC009 : <<include>>
+GP --> UC010 : <<include>>
+GP --> UC011 : <<include>>
+GP --> UC012 : <<include>>
+GP --> UC013 : <<include>>
+GP --> UC014 : <<include>>
+GP --> UC015 : <<include>>
+GP --> UC016 : <<include>>
+GP --> UC017 : <<include>>
+GP --> UC018 : <<include>>
+GP --> UC019 : <<include>>
+GP --> UC020 : <<include>>
+GP --> UC021 : <<include>>
 
-' Relacionamentos internos do sistema
-UC1 --> UC9 : <<include>>
-UC2 --> UC10 : <<include>>
-UC5 --> UC6 : <<extend>>
-UC7 --> UC8 : <<extend>>
-
-' Legenda das fases
-legend right
-  |= Fase |= Cor |= Descrição |
-  | 1 | <#87CEEB>   </#87CEEB> | Autenticação e Configuração |
-  | 2 | <#90EE90>   </#90EE90> | Gestão de Usuários |
-  | 3 | <#FFB347>   </#FFB347> | Integração Gateways |
-  | 4 | <#FF6B6B>   </#FF6B6B> | Processamento |
-  | 5 | <#DDA0DD>   </#DDA0DD> | Testes e Simulação |
-endlegend
+' Relacionamentos de Extensão
+UC005 --> UC006 : <<extend>>
+UC007 --> UC006 : <<extend>>
+UC008 --> UC020 : <<extend>>
+UC009 --> UC010 : <<extend>>
+UC009 --> UC011 : <<extend>>
+UC009 --> UC012 : <<extend>>
+UC009 --> UC013 : <<extend>>
+UC014 --> UC015 : <<extend>>
+UC014 --> UC016 : <<extend>>
+UC017 --> UC020 : <<extend>>
+UC017 --> UC021 : <<extend>>
+UC018 --> UC020 : <<extend>>
+UC018 --> UC021 : <<extend>>
+UC019 --> UC020 : <<extend>>
+UC019 --> UC021 : <<extend>>
+UC020 --> UC022 : <<extend>>
+UC022 --> UC023 : <<extend>>
+UC025 --> UC026 : <<extend>>
+UC027 --> UC028 : <<extend>>
 
 ' Notas técnicas
-note right of UC1
-  **Observações Técnicas:**
-  - Ambiente sandbox apenas
-  - Sem dados sensíveis
-  - Requisições normalizadas
-  - Logs mantidos
+note right of UC005
+  **Processamento de Pagamento:**
+  - Validação Bean Validation
+  - Controle de idempotência
+  - Seleção automática de provider
+  - Fallback entre gateways
+  - Processamento assíncrono
+  - Logs estruturados
 end note
 
-note right of UC4
-  **Fallback Automático:**
-  - Gateway principal falha
-  - Sistema alternativo ativado
-  - Transparência para cliente
+note right of UC008
+  **Processamento de Webhook:**
+  - Validação de assinatura
+  - Parse de payload JSON
+  - Processamento assíncrono
+  - Atualização de status
+  - Retry automático
+  - Dead letter queue
 end note
 
-note right of UC7
-  **Monitoramento:**
-  - Histórico completo
-  - Logs de falhas
+note right of UC022
+  **Controle de Idempotência:**
+  - Chave única por requisição
+  - Cache de resposta
+  - Expiração automática
+  - Prevenção de duplicação
+  - Performance otimizada
+end note
+
+note right of UC026
+  **Seleção de Provider:**
+  - Regras de negócio configuráveis
+  - Fallback automático
+  - Load balancing
+  - Health checks
   - Métricas de performance
 end note
 
-@enduml 
+note right of UC029
+  **Processamento Assíncrono:**
+  - RabbitMQ 3
+  - Queues especializadas
+  - Reliable messaging
+  - Dead letter queues
+  - Monitoring integrado
+end note
+
+@enduml
