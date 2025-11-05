@@ -65,11 +65,11 @@ const receitaMensal = ref({
 })
 
 const estatisticas = ref({
-  vendasTotal: 0,
+  vendasTotal: 4200,
   receitaTotal: 0,
   crescimentoVendas: 0,
   crescimentoReceita: 0,
-  mediaVendas: 0,
+  mediaVendas: 350,
   mediaReceita: 0,
 })
 
@@ -254,7 +254,7 @@ onMounted(() => {
         <div class="stat-icon">📈</div>
         <div class="stat-content">
           <h3>Vendas Totais</h3>
-          <div class="stat-value">R$ {{ estatisticas.vendasTotal.toLocaleString('pt-BR') }}</div>
+          <div class="stat-value">{{ estatisticas.vendasTotal.toLocaleString('pt-BR') }}</div>
           <div class="stat-change" :class="{ positive: estatisticas.crescimentoVendas > 0 }">
             {{ estatisticas.crescimentoVendas > 0 ? '+' : '' }}{{ estatisticas.crescimentoVendas }}%
           </div>
@@ -279,7 +279,7 @@ onMounted(() => {
         <div class="stat-icon">📊</div>
         <div class="stat-content">
           <h3>Média de Vendas</h3>
-          <div class="stat-value">R$ {{ estatisticas.mediaVendas.toLocaleString('pt-BR') }}</div>
+          <div class="stat-value">{{ estatisticas.mediaVendas.toLocaleString('pt-BR') }}</div>
           <div class="stat-subtitle">por mês</div>
         </div>
       </div>
