@@ -148,11 +148,6 @@ const menuItems = [
     to: '/dashboard/cobrancas',
   },
   {
-    title: 'Parcelamentos',
-    icon: 'mdi-calendar-clock',
-    to: '/dashboard/parcelamentos',
-  },
-  {
     title: 'Assinaturas',
     icon: 'mdi-refresh',
     to: '/dashboard/assinaturas',

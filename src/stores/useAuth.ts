@@ -2,13 +2,15 @@ import { defineStore } from 'pinia'
 import { ref, computed } from 'vue'
 import { STORAGE_KEYS } from '@/constants'
 import { useSnackbar } from './useSnackbar'
+import http from '@/services/http'
 
 interface User {
   id: string
-  name: string
+  username: string
   email: string
-  avatar?: string
-  role: 'admin' | 'user'
+  active: boolean
+  roles: string[]
+  created_at?: string
 }
 
 interface LoginCredentials {
@@ -23,6 +25,16 @@ interface RegisterData {
   confirmPassword: string
 }
 
+interface AuthResponse {
+  user: User
+  access_token: string
+  refresh_token: string
+  token_type: string
+  expires_in: number
+}
+
+const refreshToken = ref<string | null>(null)
+
 export const useAuth = defineStore('auth', () => {
   const user = ref<User | null>(null)
   const token = ref<string | null>(null)
@@ -34,29 +46,26 @@ export const useAuth = defineStore('auth', () => {
   const login = async (credentials: LoginCredentials) => {
     loading.value = true
     try {
-      // Simulação de login - será substituído pela API real
-      await new Promise((resolve) => setTimeout(resolve, 1000))
-
-      const mockUser: User = {
-        id: '1',
-        name: 'João Silva',
+      const response = await http.post<AuthResponse>('/auth/login', {
         email: credentials.email,
-        avatar: 'https://ui-avatars.com/api/?name=João+Silva&background=0D8ABC&color=fff',
-        role: 'admin',
-      }
+        password: credentials.password,
+      })
 
-      const mockToken = 'mock-jwt-token-' + Date.now()
+      const { user: userData, access_token, refresh_token } = response.data
 
-      user.value = mockUser
-      token.value = mockToken
+      user.value = userData
+      token.value = access_token
+      refreshToken.value = refresh_token
 
-      localStorage.setItem(STORAGE_KEYS.AUTH_TOKEN, mockToken)
+      localStorage.setItem(STORAGE_KEYS.AUTH_TOKEN, access_token)
+      localStorage.setItem(STORAGE_KEYS.REFRESH_TOKEN, refresh_token)
       localStorage.setItem(STORAGE_KEYS.IS_AUTHENTICATED, 'true')
 
       snackbar.success('Login realizado com sucesso!')
       return true
-    } catch (error) {
-      snackbar.error('Erro ao fazer login. Verifique suas credenciais.')
+    } catch (error: any) {
+      const errorMessage = error.response?.data?.message || 'Erro ao fazer login. Verifique suas credenciais.'
+      snackbar.error(errorMessage)
       return false
     } finally {
       loading.value = false
@@ -67,86 +76,157 @@ export const useAuth = defineStore('auth', () => {
     loading.value = true
     try {
       if (data.password !== data.confirmPassword) {
-        throw new Error('Senhas não coincidem')
+        snackbar.error('Senhas não coincidem')
+        return false
       }
 
-      // Simulação de registro - será substituído pela API real
-      await new Promise((resolve) => setTimeout(resolve, 1000))
-
-      const mockUser: User = {
-        id: '1',
-        name: data.name,
+      const response = await http.post<AuthResponse>('/auth/register', {
+        username: data.name,
         email: data.email,
-        avatar: `https://ui-avatars.com/api/?name=${encodeURIComponent(data.name)}&background=0D8ABC&color=fff`,
-        role: 'user',
-      }
+        password: data.password,
+      })
 
-      const mockToken = 'mock-jwt-token-' + Date.now()
+      const { user: userData, access_token, refresh_token } = response.data
 
-      user.value = mockUser
-      token.value = mockToken
+      user.value = userData
+      token.value = access_token
+      refreshToken.value = refresh_token
 
-      localStorage.setItem(STORAGE_KEYS.AUTH_TOKEN, mockToken)
+      localStorage.setItem(STORAGE_KEYS.AUTH_TOKEN, access_token)
+      localStorage.setItem(STORAGE_KEYS.REFRESH_TOKEN, refresh_token)
       localStorage.setItem(STORAGE_KEYS.IS_AUTHENTICATED, 'true')
 
       snackbar.success('Conta criada com sucesso!')
       return true
-    } catch (error) {
-      snackbar.error('Erro ao criar conta. Tente novamente.')
+    } catch (error: any) {
+      // Extrair mensagem de erro mais detalhada
+      let errorMessage = 'Erro ao criar conta. Verifique os dados e tente novamente.'
+
+      if (error.response?.data) {
+        const errorData = error.response.data
+        if (errorData.message) {
+          errorMessage = errorData.message
+        } else if (errorData.errors) {
+          // Se houver múltiplos erros de validação
+          const errors = Object.values(errorData.errors).flat()
+          errorMessage = errors.join(', ')
+        }
+      }
+
+      snackbar.error(errorMessage)
       return false
     } finally {
       loading.value = false
     }
   }
 
-  const logout = () => {
-    user.value = null
-    token.value = null
+  const logout = async () => {
+    try {
+      const storedRefreshToken = localStorage.getItem(STORAGE_KEYS.REFRESH_TOKEN)
+      if (storedRefreshToken && token.value) {
+        try {
+          await http.post('/auth/logout', {}, {
+            headers: {
+              Authorization: `Bearer ${token.value}`
+            }
+          })
+        } catch (error) {
+          console.warn('Erro ao fazer logout no servidor:', error)
+        }
+      }
+    } catch (error) {
+      console.warn('Erro ao fazer logout:', error)
+    } finally {
+      user.value = null
+      token.value = null
+      refreshToken.value = null
 
-    localStorage.removeItem(STORAGE_KEYS.AUTH_TOKEN)
-    localStorage.removeItem(STORAGE_KEYS.IS_AUTHENTICATED)
+      localStorage.removeItem(STORAGE_KEYS.AUTH_TOKEN)
+      localStorage.removeItem(STORAGE_KEYS.REFRESH_TOKEN)
+      localStorage.removeItem(STORAGE_KEYS.IS_AUTHENTICATED)
 
-    snackbar.success('Logout realizado com sucesso!')
+      snackbar.success('Logout realizado com sucesso!')
+    }
   }
 
-  const checkAuth = () => {
+  const refreshAccessToken = async () => {
+    const storedRefreshToken = localStorage.getItem(STORAGE_KEYS.REFRESH_TOKEN)
+    if (!storedRefreshToken) {
+      return false
+    }
+
+    try {
+      const response = await http.post<AuthResponse>('/auth/refresh', {
+        refreshToken: storedRefreshToken,
+      })
+
+      const { user: userData, access_token, refresh_token: newRefreshToken } = response.data
+
+      user.value = userData
+      token.value = access_token
+      refreshToken.value = newRefreshToken
+
+      localStorage.setItem(STORAGE_KEYS.AUTH_TOKEN, access_token)
+      localStorage.setItem(STORAGE_KEYS.REFRESH_TOKEN, newRefreshToken)
+
+      return true
+    } catch (error) {
+      return false
+    }
+  }
+
+  const checkAuth = async () => {
     const storedToken = localStorage.getItem(STORAGE_KEYS.AUTH_TOKEN)
+    const storedRefreshToken = localStorage.getItem(STORAGE_KEYS.REFRESH_TOKEN)
     const isAuth = localStorage.getItem(STORAGE_KEYS.IS_AUTHENTICATED)
 
     if (storedToken && isAuth === 'true') {
       token.value = storedToken
-      // Em uma implementação real, validaria o token com a API
-      // Por enquanto, simula um usuário
-      user.value = {
-        id: '1',
-        name: 'João Silva',
-        email: 'joao@example.com',
-        avatar: 'https://ui-avatars.com/api/?name=João+Silva&background=0D8ABC&color=fff',
-        role: 'admin',
+      if (storedRefreshToken) {
+        refreshToken.value = storedRefreshToken
+      }
+
+      try {
+        const response = await http.get<User>('/auth/me')
+        user.value = response.data
+      } catch (error: any) {
+        if (error.response?.status === 401 && storedRefreshToken) {
+          const refreshed = await refreshAccessToken()
+          if (!refreshed) {
+            clearAuth()
+          }
+        } else {
+          clearAuth()
+        }
       }
     } else {
-      // Limpar estado se não estiver autenticado
-      user.value = null
-      token.value = null
-      localStorage.removeItem(STORAGE_KEYS.AUTH_TOKEN)
-      localStorage.removeItem(STORAGE_KEYS.IS_AUTHENTICATED)
+      clearAuth()
     }
+  }
+
+  const clearAuth = () => {
+    user.value = null
+    token.value = null
+    refreshToken.value = null
+    localStorage.removeItem(STORAGE_KEYS.AUTH_TOKEN)
+    localStorage.removeItem(STORAGE_KEYS.REFRESH_TOKEN)
+    localStorage.removeItem(STORAGE_KEYS.IS_AUTHENTICATED)
   }
 
   const updateProfile = async (profileData: Partial<User>) => {
     loading.value = true
     try {
-      // Simulação de atualização - será substituído pela API real
-      await new Promise((resolve) => setTimeout(resolve, 1000))
-
+      // TODO: Implementar endpoint de atualização de perfil quando disponível
+      // Por enquanto, apenas atualiza localmente
       if (user.value) {
         user.value = { ...user.value, ...profileData }
       }
 
       snackbar.success('Perfil atualizado com sucesso!')
       return true
-    } catch (error) {
-      snackbar.error('Erro ao atualizar perfil.')
+    } catch (error: any) {
+      const errorMessage = error.response?.data?.message || 'Erro ao atualizar perfil.'
+      snackbar.error(errorMessage)
       return false
     } finally {
       loading.value = false
@@ -156,12 +236,14 @@ export const useAuth = defineStore('auth', () => {
   return {
     user,
     token,
+    refreshToken,
     loading,
     isAuthenticated,
     login,
     register,
     logout,
     checkAuth,
+    refreshAccessToken,
     updateProfile,
   }
 })

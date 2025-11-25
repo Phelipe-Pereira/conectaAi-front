@@ -1,6 +1,6 @@
 // API Configuration
 export const API_CONFIG = {
-  BASE_URL: 'http://localhost:9999/api/v1', // URL inexistente para forçar dados mock
+  BASE_URL: '/api/v1', // Usa proxy do Vite em dev, ou URL completa em produção
   TIMEOUT: 30000,
   RETRY_ATTEMPTS: 2,
   RETRY_DELAY_BASE: 1000,
@@ -8,6 +8,7 @@ export const API_CONFIG = {
 
 // HTTP Status Codes
 export const HTTP_STATUS = {
+  UNAUTHORIZED: 401,
   RATE_LIMIT: 429,
   SERVER_ERROR_MIN: 500,
 } as const
@@ -38,5 +39,6 @@ export const PAGINATION = {
 // Local Storage Keys
 export const STORAGE_KEYS = {
   AUTH_TOKEN: 'auth_token',
+  REFRESH_TOKEN: 'refresh_token',
   IS_AUTHENTICATED: 'isAuthenticated',
 } as const

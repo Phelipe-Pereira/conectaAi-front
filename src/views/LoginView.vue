@@ -1,11 +1,13 @@
 <script setup>
 import { ref } from 'vue'
 import { useRouter } from 'vue-router'
+import { useAuth } from '@/stores/useAuth'
 
 const router = useRouter()
+const authStore = useAuth()
+
 const email = ref('')
 const password = ref('')
-const loading = ref(false)
 const error = ref('')
 
 const validateEmail = (email) => {
@@ -35,19 +37,15 @@ const handleLogin = async () => {
     return
   }
 
-  loading.value = true
+  const success = await authStore.login({
+    email: email.value,
+    password: password.value,
+  })
 
-  try {
-    await new Promise((resolve) => setTimeout(resolve, 1000))
-
-    localStorage.setItem('isAuthenticated', 'true')
-    localStorage.setItem('userEmail', email.value)
-
+  if (success) {
     router.push({ name: 'dashboard' })
-  } catch (err) {
-    error.value = 'Erro ao fazer login. Tente novamente.'
-  } finally {
-    loading.value = false
+  } else {
+    error.value = 'Erro ao fazer login. Verifique suas credenciais.'
   }
 }
 
@@ -106,9 +104,9 @@ const goToResetPassword = () => {
           </button>
         </div>
 
-        <button type="submit" class="btn btn-primary login-button" :disabled="loading">
-          <span v-if="loading" class="loading-spinner"></span>
-          {{ loading ? 'Entrando...' : 'Entrar' }}
+        <button type="submit" class="btn btn-primary login-button" :disabled="authStore.loading">
+          <span v-if="authStore.loading" class="loading-spinner"></span>
+          {{ authStore.loading ? 'Entrando...' : 'Entrar' }}
         </button>
 
         <p v-if="error" class="error-message">{{ error }}</p>

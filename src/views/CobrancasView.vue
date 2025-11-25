@@ -114,7 +114,7 @@
       <v-data-table
         :headers="headers"
         :items="cobrancasFiltradas"
-        :loading="loading"
+        :loading="chargesStore.loading"
         class="cobrancas-table"
         hover
       >
@@ -256,13 +256,28 @@
                 />
               </v-col>
               <v-col cols="12" md="6">
-                <v-text-field
+                <v-select
                   v-model="novaCobranca.customer_id"
-                  label="ID do Cliente"
-                  placeholder="cus_001"
+                  :items="customersStore.customers.map(c => ({
+                    title: `${c.full_name || c.name || `${c.first_name || ''} ${c.last_name || ''}`.trim()} (${c.id})`,
+                    value: c.id
+                  }))"
+                  label="Cliente"
                   variant="outlined"
                   :rules="[rules.required]"
                   required
+                  :loading="customersStore.loading"
+                />
+              </v-col>
+              <v-col cols="12" md="6">
+                <v-text-field
+                  v-model="novaCobranca.due_date"
+                  label="Data de Vencimento"
+                  type="date"
+                  variant="outlined"
+                  :rules="[rules.required]"
+                  required
+                  :min="new Date().toISOString().split('T')[0]"
                 />
               </v-col>
               <v-col cols="12" md="6">
@@ -294,7 +309,7 @@
           <v-btn
             color="primary"
             @click="saveCobranca"
-            :loading="loading"
+            :loading="chargesStore.loading"
             :disabled="!formValid"
             class="save-btn"
           >
@@ -375,12 +390,14 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed, onMounted } from 'vue'
-import { useSnackbar } from '@/stores/useSnackbar'
+import { ref, computed, onMounted, watch } from 'vue'
+import { useCharges } from '@/stores/useCharges'
+import { useCustomers } from '@/stores/useCustomers'
+import http from '@/services/http'
 
-const snackbar = useSnackbar()
+const chargesStore = useCharges()
+const customersStore = useCustomers()
 
-// Estado
 const showCreateDialog = ref(false)
 const showViewDialog = ref(false)
 const editingCobranca = ref<any>(null)
@@ -388,15 +405,16 @@ const selectedCobranca = ref<any>(null)
 const searchTerm = ref('')
 const selectedStatus = ref('Todos')
 const selectedMethod = ref('Todos')
-const loading = ref(false)
 const formValid = ref(false)
 
 const novaCobranca = ref({
+  provider: 'ASAAS' as const,
   amount: '',
   description: '',
-  payment_method: 'CARD',
+  payment_method: 'BOLETO',
   currency: 'BRL',
   customer_id: '',
+  due_date: '',
   metadata: '',
 })
 
@@ -408,7 +426,6 @@ const rules = {
   positive: (value: any) => parseFloat(value) > 0 || 'Valor deve ser maior que zero',
 }
 
-// Headers da tabela
 const headers = [
   { title: 'ID', key: 'id', sortable: true },
   { title: 'Valor', key: 'amount', sortable: true },
@@ -420,77 +437,39 @@ const headers = [
   { title: 'Ações', key: 'actions', sortable: false },
 ]
 
-// Dados mockados para teste
-const cobrancas = ref([
-  {
-    id: 'ch_001',
-    amount: 15000,
-    description: 'Compra de produtos eletrônicos',
-    status: 'PAID',
-    payment_method: 'CARD',
-    customer_id: 'cus_001',
-    currency: 'BRL',
-    created_at: '2024-01-15T10:30:00Z',
-    updated_at: '2024-01-15T10:35:00Z',
-  },
-  {
-    id: 'ch_002',
-    amount: 25000,
-    description: 'Serviço de consultoria',
-    status: 'PENDING',
-    payment_method: 'BOLETO',
-    customer_id: 'cus_002',
-    currency: 'BRL',
-    created_at: '2024-01-14T14:20:00Z',
-    updated_at: '2024-01-14T14:20:00Z',
-  },
-  {
-    id: 'ch_003',
-    amount: 5000,
-    description: 'Assinatura mensal',
-    status: 'FAILED',
-    payment_method: 'PIX',
-    customer_id: 'cus_003',
-    currency: 'BRL',
-    created_at: '2024-01-13T09:15:00Z',
-    updated_at: '2024-01-13T09:20:00Z',
-  },
-])
-
-// Computed
 const cobrancasFiltradas = computed(() => {
-  let filtered = cobrancas.value
+  let filtered = chargesStore.charges
 
   if (searchTerm.value) {
+    const search = searchTerm.value.toLowerCase()
     filtered = filtered.filter(
-      (cobranca) =>
-        cobranca.id.toLowerCase().includes(searchTerm.value.toLowerCase()) ||
-        cobranca.description.toLowerCase().includes(searchTerm.value.toLowerCase()) ||
-        cobranca.customer_id.toLowerCase().includes(searchTerm.value.toLowerCase()),
+      (cobranca: any) =>
+        cobranca.id?.toLowerCase().includes(search) ||
+        cobranca.description?.toLowerCase().includes(search) ||
+        cobranca.customer_id?.toLowerCase().includes(search),
     )
   }
 
   if (selectedStatus.value !== 'Todos') {
-    filtered = filtered.filter((cobranca) => cobranca.status === selectedStatus.value)
+    filtered = filtered.filter((cobranca: any) => cobranca.status === selectedStatus.value)
   }
 
   if (selectedMethod.value !== 'Todos') {
-    filtered = filtered.filter((cobranca) => cobranca.payment_method === selectedMethod.value)
+    filtered = filtered.filter((cobranca: any) => cobranca.payment_method === selectedMethod.value)
   }
 
   return filtered
 })
 
 const stats = computed(() => {
-  const total = cobrancas.value.length
-  const paid = cobrancas.value.filter((c) => c.status === 'PAID').length
-  const pending = cobrancas.value.filter((c) => c.status === 'PENDING').length
-  const failed = cobrancas.value.filter((c) => c.status === 'FAILED').length
+  const total = chargesStore.charges.length
+  const paid = chargesStore.paidCharges.length
+  const pending = chargesStore.pendingCharges.length
+  const failed = chargesStore.failedCharges.length
 
   return { total, paid, pending, failed }
 })
 
-// Métodos
 const viewCobranca = (cobranca: any) => {
   selectedCobranca.value = cobranca
   showViewDialog.value = true
@@ -510,93 +489,74 @@ const editCobranca = (cobranca: any) => {
 }
 
 const deleteCobranca = async (cobranca: any) => {
-  if (confirm('Tem certeza que deseja excluir esta cobrança?')) {
-    loading.value = true
+  if (confirm('Tem certeza que deseja cancelar esta cobrança?')) {
     try {
-      await new Promise((resolve) => setTimeout(resolve, 1000))
-      const index = cobrancas.value.findIndex((c) => c.id === cobranca.id)
-      if (index !== -1) {
-        cobrancas.value.splice(index, 1)
-      }
-      snackbar.success('Cobrança excluída com sucesso!')
+      await chargesStore.cancelCharge(cobranca.id)
     } catch (error) {
-      snackbar.error('Erro ao excluir cobrança')
-    } finally {
-      loading.value = false
+      // Erro já tratado no store
     }
   }
 }
 
 const saveCobranca = async () => {
   if (!formValid.value) {
-    snackbar.error('Por favor, preencha todos os campos obrigatórios corretamente.')
     return
   }
 
-  loading.value = true
   try {
-    await new Promise((resolve) => setTimeout(resolve, 1000))
-
     if (editingCobranca.value) {
       // Editar
-      const index = cobrancas.value.findIndex((c) => c.id === editingCobranca.value.id)
-      if (index !== -1) {
-        cobrancas.value[index] = {
-          ...editingCobranca.value,
-          amount: parseFloat(novaCobranca.value.amount),
+      await chargesStore.updateCharge(editingCobranca.value.id, {
           description: novaCobranca.value.description,
-          payment_method: novaCobranca.value.payment_method,
-          currency: novaCobranca.value.currency,
-          customer_id: novaCobranca.value.customer_id,
-          updated_at: new Date().toISOString(),
-        }
-      }
-      snackbar.success('Cobrança atualizada com sucesso!')
+      })
     } else {
-      // Criar
-      const newCobranca = {
-        id: `ch_${Date.now()}`,
+      const dueDate = novaCobranca.value.due_date
+        ? new Date(novaCobranca.value.due_date)
+        : new Date()
+      dueDate.setDate(dueDate.getDate() + 7)
+
+      const response = await http.post('/payments', {
+        provider: novaCobranca.value.provider,
+        customer_id: parseInt(novaCobranca.value.customer_id),
         amount: parseFloat(novaCobranca.value.amount),
-        description: novaCobranca.value.description,
-        status: 'PENDING',
-        payment_method: novaCobranca.value.payment_method,
         currency: novaCobranca.value.currency,
-        customer_id: novaCobranca.value.customer_id,
-        created_at: new Date().toISOString(),
-        updated_at: new Date().toISOString(),
-      }
-      cobrancas.value.unshift(newCobranca)
-      snackbar.success('Cobrança criada com sucesso!')
+        payment_method: novaCobranca.value.payment_method,
+        description: novaCobranca.value.description || null,
+        due_date: dueDate.toISOString().split('T')[0],
+      })
+
+      await chargesStore.listCharges()
     }
 
     showCreateDialog.value = false
     resetForm()
   } catch (error) {
-    snackbar.error('Erro ao salvar cobrança')
-  } finally {
-    loading.value = false
   }
 }
 
 const resetForm = () => {
   editingCobranca.value = null
+  const defaultDueDate = new Date()
+  defaultDueDate.setDate(defaultDueDate.getDate() + 7)
+
   novaCobranca.value = {
+    provider: 'ASAAS' as const,
     amount: '',
     description: '',
-    payment_method: 'CARD',
+    payment_method: 'BOLETO',
     currency: 'BRL',
     customer_id: '',
+    due_date: defaultDueDate.toISOString().split('T')[0],
     metadata: '',
   }
   formValid.value = false
 }
 
-// Utilitários
 const formatCurrency = (value: number) => {
   return new Intl.NumberFormat('pt-BR', {
     style: 'currency',
     currency: 'BRL',
-  }).format(value / 100)
+  }).format(value)
 }
 
 const formatDate = (dateString: string) => {
@@ -676,6 +636,8 @@ const clearFilters = () => {
   searchTerm.value = ''
   selectedStatus.value = 'Todos'
   selectedMethod.value = 'Todos'
+  chargesStore.clearFilters()
+  chargesStore.listCharges()
 }
 
 const cancelForm = () => {
@@ -683,9 +645,41 @@ const cancelForm = () => {
   resetForm()
 }
 
-// Lifecycle
-onMounted(() => {
-  // Carregar dados iniciais se necessário
+watch(searchTerm, (newValue) => {
+  if (newValue) {
+    chargesStore.searchCharges(newValue)
+  } else {
+    chargesStore.listCharges()
+  }
+})
+
+watch(selectedStatus, (newValue) => {
+  if (newValue !== 'Todos') {
+    chargesStore.filterByStatus(newValue as any)
+  } else {
+    chargesStore.clearFilters()
+    chargesStore.listCharges()
+  }
+})
+
+watch(selectedMethod, (newValue) => {
+  if (newValue !== 'Todos') {
+    chargesStore.filterByPaymentMethod(newValue as any)
+  } else {
+    chargesStore.clearFilters()
+    chargesStore.listCharges()
+  }
+})
+
+watch(showCreateDialog, async (isOpen) => {
+  if (isOpen && customersStore.customers.length === 0) {
+    await customersStore.listCustomers()
+  }
+})
+
+onMounted(async () => {
+  await chargesStore.listCharges()
+  await customersStore.listCustomers()
 })
 </script>
 

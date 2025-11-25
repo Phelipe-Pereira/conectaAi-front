@@ -3,13 +3,13 @@ export const formatCurrency = (value: number, currency: string = 'BRL'): string 
   return new Intl.NumberFormat('pt-BR', {
     style: 'currency',
     currency,
-  }).format(value / 100) // Assumindo que o valor vem em centavos
+  }).format(value)
 }
 
 // Formatação de data brasileira
 export const formatDate = (dateString: string, includeTime: boolean = false): string => {
   const date = new Date(dateString)
-  
+
   if (includeTime) {
     return date.toLocaleDateString('pt-BR', {
       day: '2-digit',
@@ -19,7 +19,7 @@ export const formatDate = (dateString: string, includeTime: boolean = false): st
       minute: '2-digit',
     })
   }
-  
+
   return date.toLocaleDateString('pt-BR', {
     day: '2-digit',
     month: '2-digit',
@@ -31,24 +31,27 @@ export const formatDate = (dateString: string, includeTime: boolean = false): st
 export const formatCPF = (cpf: string): string => {
   const cleaned = cpf.replace(/\D/g, '')
   const match = cleaned.match(/^(\d{3})(\d{3})(\d{3})(\d{2})$/)
-  
+
   if (match) {
     return `${match[1]}.${match[2]}.${match[3]}-${match[4]}`
   }
-  
+
   return cpf
 }
 
 // Formatação de telefone brasileiro
-export const formatPhone = (phone: string): string => {
+export const formatPhone = (phone: string | null | undefined): string => {
+  if (!phone) {
+    return ''
+  }
   const cleaned = phone.replace(/\D/g, '')
-  
+
   if (cleaned.length === 11) {
     return `(${cleaned.slice(0, 2)}) ${cleaned.slice(2, 7)}-${cleaned.slice(7)}`
   } else if (cleaned.length === 10) {
     return `(${cleaned.slice(0, 2)}) ${cleaned.slice(2, 6)}-${cleaned.slice(6)}`
   }
-  
+
   return phone
 }
 
@@ -56,11 +59,11 @@ export const formatPhone = (phone: string): string => {
 export const formatCEP = (cep: string): string => {
   const cleaned = cep.replace(/\D/g, '')
   const match = cleaned.match(/^(\d{5})(\d{3})$/)
-  
+
   if (match) {
     return `${match[1]}-${match[2]}`
   }
-  
+
   return cep
 }
 
@@ -68,11 +71,11 @@ export const formatCEP = (cep: string): string => {
 export const formatCardNumber = (cardNumber: string): string => {
   const cleaned = cardNumber.replace(/\D/g, '')
   const lastFour = cleaned.slice(-4)
-  
+
   if (cleaned.length >= 4) {
     return `**** **** **** ${lastFour}`
   }
-  
+
   return cardNumber
 }
 
@@ -82,7 +85,7 @@ export const formatRelativeDate = (dateString: string): string => {
   const now = new Date()
   const diffInMs = now.getTime() - date.getTime()
   const diffInDays = Math.floor(diffInMs / (1000 * 60 * 60 * 24))
-  
+
   if (diffInDays === 0) {
     return 'Hoje'
   } else if (diffInDays === 1) {
@@ -104,11 +107,11 @@ export const formatRelativeDate = (dateString: string): string => {
 // Formatação de tamanho de arquivo
 export const formatFileSize = (bytes: number): string => {
   if (bytes === 0) {return '0 Bytes'}
-  
+
   const k = 1024
   const sizes = ['Bytes', 'KB', 'MB', 'GB', 'TB']
   const i = Math.floor(Math.log(bytes) / Math.log(k))
-  
+
   return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i]
 }
 

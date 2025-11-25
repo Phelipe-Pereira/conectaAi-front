@@ -114,7 +114,7 @@
       <v-data-table
         :headers="headers"
         :items="assinaturasFiltradas"
-        :loading="loading"
+        :loading="subscriptionsStore.loading"
         class="assinaturas-table"
         hover
       >
@@ -153,17 +153,17 @@
           </v-chip>
         </template>
 
-        <template #item.plan_type="{ item }">
+        <template #item.interval="{ item }">
           <v-chip
-            :color="getPlanColor(item.plan_type)"
+            :color="getPlanColor(item.interval)"
             size="small"
             variant="tonal"
             class="plan-chip"
           >
             <v-icon size="14" class="mr-1">
-              {{ getPlanIcon(item.plan_type) }}
+              {{ getPlanIcon(item.interval) }}
             </v-icon>
-            {{ getPlanText(item.plan_type) }}
+            {{ getPlanText(item.interval) }}
           </v-chip>
         </template>
 
@@ -258,9 +258,24 @@
               </v-col>
               <v-col cols="12" md="6">
                 <v-select
-                  v-model="novaAssinatura.plan_type"
-                  :items="planOptions.filter((p) => p !== 'Todos')"
-                  label="Tipo de Plano"
+                  v-model="novaAssinatura.interval"
+                  :items="[
+                    { title: 'Mensal', value: 'MONTHLY' },
+                    { title: 'Trimestral', value: 'QUARTERLY' },
+                    { title: 'Semestral', value: 'SEMIANNUAL' },
+                    { title: 'Anual', value: 'YEARLY' },
+                  ]"
+                  label="Intervalo"
+                  variant="outlined"
+                  :rules="[rules.required]"
+                  required
+                />
+              </v-col>
+              <v-col cols="12" md="6">
+                <v-select
+                  v-model="novaAssinatura.payment_method"
+                  :items="['PIX', 'BOLETO', 'CREDIT_CARD']"
+                  label="Método de Pagamento"
                   variant="outlined"
                   :rules="[rules.required]"
                   required
@@ -272,25 +287,13 @@
                   label="Descrição"
                   placeholder="Descrição da assinatura"
                   variant="outlined"
-                  :rules="[rules.required]"
-                  required
-                />
-              </v-col>
-              <v-col cols="12" md="6">
-                <v-text-field
-                  v-model="novaAssinatura.customer_id"
-                  label="ID do Cliente"
-                  placeholder="cus_001"
-                  variant="outlined"
-                  :rules="[rules.required]"
-                  required
                 />
               </v-col>
               <v-col cols="12" md="6">
                 <v-select
-                  v-model="novaAssinatura.currency"
-                  :items="['BRL', 'USD', 'EUR']"
-                  label="Moeda"
+                  v-model="novaAssinatura.customer_id"
+                  :items="customersStore.customers.map(c => ({ title: c.full_name || c.name || `${c.first_name || ''} ${c.last_name || ''}`.trim(), value: c.id }))"
+                  label="Cliente"
                   variant="outlined"
                   :rules="[rules.required]"
                   required
@@ -298,33 +301,13 @@
               </v-col>
               <v-col cols="12" md="6">
                 <v-text-field
-                  v-model="novaAssinatura.billing_cycle"
-                  label="Ciclo de Cobrança (dias)"
-                  type="number"
-                  placeholder="30"
+                  v-model="novaAssinatura.start_at"
+                  label="Data de Início"
+                  type="date"
                   variant="outlined"
-                  :rules="[rules.required, rules.positive]"
+                  :rules="[rules.required]"
                   required
-                  min="1"
-                />
-              </v-col>
-              <v-col cols="12" md="6">
-                <v-text-field
-                  v-model="novaAssinatura.trial_days"
-                  label="Dias de Teste"
-                  type="number"
-                  placeholder="0"
-                  variant="outlined"
-                  min="0"
-                />
-              </v-col>
-              <v-col cols="12">
-                <v-textarea
-                  v-model="novaAssinatura.metadata"
-                  label="Metadados (JSON)"
-                  placeholder='{"plan_name": "Premium", "features": ["feature1", "feature2"]}'
-                  variant="outlined"
-                  rows="3"
+                  :min="new Date().toISOString().split('T')[0]"
                 />
               </v-col>
             </v-row>
@@ -337,7 +320,7 @@
           <v-btn
             color="primary"
             @click="saveAssinatura"
-            :loading="loading"
+            :loading="subscriptionsStore.loading"
             :disabled="!formValid"
             class="save-btn"
           >
@@ -385,8 +368,8 @@
             <div class="detail-item">
               <div class="detail-label">Plano</div>
               <div class="detail-value">
-                <v-chip :color="getPlanColor(selectedAssinatura.plan_type)" size="small">
-                  {{ getPlanText(selectedAssinatura.plan_type) }}
+                <v-chip :color="getPlanColor(selectedAssinatura.interval)" size="small">
+                  {{ getPlanText(selectedAssinatura.interval) }}
                 </v-chip>
               </div>
             </div>
@@ -430,12 +413,13 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed, onMounted } from 'vue'
-import { useSnackbar } from '@/stores/useSnackbar'
+import { ref, computed, onMounted, watch } from 'vue'
+import { useSubscriptions } from '@/stores/useSubscriptions'
+import { useCustomers } from '@/stores/useCustomers'
 
-const snackbar = useSnackbar()
+const subscriptionsStore = useSubscriptions()
+const customersStore = useCustomers()
 
-// Estado
 const showCreateDialog = ref(false)
 const showViewDialog = ref(false)
 const editingAssinatura = ref<any>(null)
@@ -443,18 +427,17 @@ const selectedAssinatura = ref<any>(null)
 const searchTerm = ref('')
 const selectedStatus = ref('Todos')
 const selectedPlan = ref('Todos')
-const loading = ref(false)
 const formValid = ref(false)
 
 const novaAssinatura = ref({
-  amount: '',
-  description: '',
-  plan_type: 'MONTHLY',
-  currency: 'BRL',
+  provider: 'ASAAS' as const,
   customer_id: '',
-  billing_cycle: '30',
-  trial_days: '0',
-  metadata: '',
+  amount: '',
+  currency: 'BRL' as const,
+  interval: 'MONTHLY' as const,
+  payment_method: 'PIX',
+  description: '',
+  start_at: '',
 })
 
 const statusOptions = ['Todos', 'ACTIVE', 'PAUSED', 'CANCELED', 'EXPIRED']
@@ -465,98 +448,50 @@ const rules = {
   positive: (v: any) => parseFloat(v) > 0 || 'O valor deve ser positivo',
 }
 
-// Headers da tabela
 const headers = [
   { title: 'ID', key: 'id', sortable: true },
   { title: 'Valor', key: 'amount', sortable: true },
   { title: 'Descrição', key: 'description' },
   { title: 'Status', key: 'status', sortable: true },
-  { title: 'Plano', key: 'plan_type', sortable: true },
+  { title: 'Intervalo', key: 'interval', sortable: true },
   { title: 'Cliente', key: 'customer_id' },
   { title: 'Próxima Cobrança', key: 'next_billing', sortable: true },
   { title: 'Ações', key: 'actions', sortable: false },
 ]
 
-// Dados mockados para teste
-const assinaturas = ref([
-  {
-    id: 'sub_001',
-    amount: 9900,
-    description: 'Plano Premium Mensal',
-    status: 'ACTIVE',
-    plan_type: 'MONTHLY',
-    customer_id: 'cus_001',
-    currency: 'BRL',
-    billing_cycle: 30,
-    trial_days: 7,
-    next_billing: '2024-02-15T10:30:00Z',
-    created_at: '2024-01-15T10:30:00Z',
-    updated_at: '2024-01-15T10:35:00Z',
-  },
-  {
-    id: 'sub_002',
-    amount: 25000,
-    description: 'Plano Empresarial Trimestral',
-    status: 'PAUSED',
-    plan_type: 'QUARTERLY',
-    customer_id: 'cus_002',
-    currency: 'BRL',
-    billing_cycle: 90,
-    trial_days: 0,
-    next_billing: '2024-04-14T14:20:00Z',
-    created_at: '2024-01-14T14:20:00Z',
-    updated_at: '2024-01-20T09:15:00Z',
-  },
-  {
-    id: 'sub_003',
-    amount: 50000,
-    description: 'Plano Anual Básico',
-    status: 'CANCELED',
-    plan_type: 'YEARLY',
-    customer_id: 'cus_003',
-    currency: 'BRL',
-    billing_cycle: 365,
-    trial_days: 14,
-    next_billing: '2025-01-13T09:15:00Z',
-    created_at: '2024-01-13T09:15:00Z',
-    updated_at: '2024-01-25T16:45:00Z',
-  },
-])
-
-// Computed
 const assinaturasFiltradas = computed(() => {
-  let filtered = assinaturas.value
+  let filtered = subscriptionsStore.subscriptions
 
   if (searchTerm.value) {
+    const search = searchTerm.value.toLowerCase()
     filtered = filtered.filter(
-      (assinatura) =>
-        assinatura.id.toLowerCase().includes(searchTerm.value.toLowerCase()) ||
-        assinatura.description.toLowerCase().includes(searchTerm.value.toLowerCase()) ||
-        assinatura.customer_id.toLowerCase().includes(searchTerm.value.toLowerCase()),
+      (assinatura: any) =>
+        assinatura.id?.toLowerCase().includes(search) ||
+        assinatura.description?.toLowerCase().includes(search) ||
+        assinatura.customer_id?.toLowerCase().includes(search),
     )
   }
 
   if (selectedStatus.value !== 'Todos') {
-    filtered = filtered.filter((assinatura) => assinatura.status === selectedStatus.value)
+    filtered = filtered.filter((assinatura: any) => assinatura.status === selectedStatus.value)
   }
 
   if (selectedPlan.value !== 'Todos') {
-    filtered = filtered.filter((assinatura) => assinatura.plan_type === selectedPlan.value)
+    filtered = filtered.filter((assinatura: any) => assinatura.interval === selectedPlan.value)
   }
 
   return filtered
 })
 
 const stats = computed(() => {
-  const total = assinaturas.value.length
-  const active = assinaturas.value.filter((a) => a.status === 'ACTIVE').length
-  const pending = assinaturas.value.filter((a) => a.status === 'PAUSED').length
-  const canceled = assinaturas.value.filter((a) => a.status === 'CANCELED').length
+  const total = subscriptionsStore.subscriptions.length
+  const active = subscriptionsStore.activeSubscriptions.length
+  const pending = subscriptionsStore.pausedSubscriptions.length
+  const canceled = subscriptionsStore.canceledSubscriptions.length
 
   return { total, active, pending, canceled }
 })
 
-// Métodos
 const viewAssinatura = (assinatura: any) => {
   selectedAssinatura.value = assinatura
   showViewDialog.value = true
@@ -565,132 +500,48 @@ const viewAssinatura = (assinatura: any) => {
 const editAssinatura = (assinatura: any) => {
   editingAssinatura.value = assinatura
   novaAssinatura.value = {
-    amount: assinatura.amount.toString(),
-    description: assinatura.description,
-    plan_type: assinatura.plan_type,
-    currency: assinatura.currency,
-    customer_id: assinatura.customer_id,
-    billing_cycle: assinatura.billing_cycle.toString(),
-    trial_days: assinatura.trial_days.toString(),
-    metadata: JSON.stringify(assinatura.metadata || {}, null, 2),
+    provider: 'ASAAS' as const,
+    customer_id: assinatura.customer_id || '',
+    amount: (assinatura.amount / 100).toString(),
+    currency: assinatura.currency || 'BRL' as const,
+    interval: assinatura.interval || 'MONTHLY' as const,
+    payment_method: assinatura.payment_method || 'PIX',
+    description: assinatura.description || '',
+    start_at: assinatura.start_at ? new Date(assinatura.start_at).toISOString().split('T')[0] : '',
   }
   showCreateDialog.value = true
 }
 
 const pauseAssinatura = async (assinatura: any) => {
   if (confirm('Tem certeza que deseja pausar esta assinatura?')) {
-    loading.value = true
     try {
-      await new Promise((resolve) => setTimeout(resolve, 1000))
-      const index = assinaturas.value.findIndex((a) => a.id === assinatura.id)
-      if (index !== -1) {
-        assinaturas.value[index].status = 'PAUSED'
-        assinaturas.value[index].updated_at = new Date().toISOString()
-      }
-      snackbar.success('Assinatura pausada com sucesso!')
+      await subscriptionsStore.pauseSubscription(assinatura.id)
     } catch (error) {
-      snackbar.error('Erro ao pausar assinatura')
-    } finally {
-      loading.value = false
+      // Erro já tratado no store
     }
   }
 }
 
 const resumeAssinatura = async (assinatura: any) => {
   if (confirm('Tem certeza que deseja retomar esta assinatura?')) {
-    loading.value = true
     try {
-      await new Promise((resolve) => setTimeout(resolve, 1000))
-      const index = assinaturas.value.findIndex((a) => a.id === assinatura.id)
-      if (index !== -1) {
-        assinaturas.value[index].status = 'ACTIVE'
-        assinaturas.value[index].updated_at = new Date().toISOString()
-      }
-      snackbar.success('Assinatura retomada com sucesso!')
+      await subscriptionsStore.resumeSubscription(assinatura.id)
     } catch (error) {
-      snackbar.error('Erro ao retomar assinatura')
-    } finally {
-      loading.value = false
+      // Erro já tratado no store
     }
   }
 }
 
 const deleteAssinatura = async (assinatura: any) => {
-  if (confirm('Tem certeza que deseja excluir esta assinatura?')) {
-    loading.value = true
+  if (confirm('Tem certeza que deseja cancelar esta assinatura?')) {
     try {
-      await new Promise((resolve) => setTimeout(resolve, 1000))
-      const index = assinaturas.value.findIndex((a) => a.id === assinatura.id)
-      if (index !== -1) {
-        assinaturas.value.splice(index, 1)
-      }
-      snackbar.success('Assinatura excluída com sucesso!')
+      await subscriptionsStore.cancelSubscription(assinatura.id)
     } catch (error) {
-      snackbar.error('Erro ao excluir assinatura')
-    } finally {
-      loading.value = false
-    }
-  }
-}
-
-const saveAssinatura = async () => {
-  if (!formValid.value) {
-    snackbar.error('Por favor, preencha todos os campos obrigatórios corretamente.')
-    return
-  }
-
-  loading.value = true
-  try {
-    await new Promise((resolve) => setTimeout(resolve, 1000))
-
-    if (editingAssinatura.value) {
-      // Editar
-      const index = assinaturas.value.findIndex((a) => a.id === editingAssinatura.value.id)
-      if (index !== -1) {
-        assinaturas.value[index] = {
-          ...editingAssinatura.value,
-          amount: parseFloat(novaAssinatura.value.amount),
-          description: novaAssinatura.value.description,
-          plan_type: novaAssinatura.value.plan_type,
-          currency: novaAssinatura.value.currency,
-          customer_id: novaAssinatura.value.customer_id,
-          billing_cycle: parseInt(novaAssinatura.value.billing_cycle),
-          trial_days: parseInt(novaAssinatura.value.trial_days),
-          updated_at: new Date().toISOString(),
+      // Erro já tratado no store
         }
       }
-      snackbar.success('Assinatura atualizada com sucesso!')
-    } else {
-      // Criar
-      const nextBilling = new Date()
-      nextBilling.setDate(nextBilling.getDate() + parseInt(novaAssinatura.value.billing_cycle))
-
-      const newAssinatura = {
-        id: `sub_${Date.now()}`,
-        amount: parseFloat(novaAssinatura.value.amount),
-        description: novaAssinatura.value.description,
-        status: 'ACTIVE',
-        plan_type: novaAssinatura.value.plan_type,
-        currency: novaAssinatura.value.currency,
-        customer_id: novaAssinatura.value.customer_id,
-        billing_cycle: parseInt(novaAssinatura.value.billing_cycle),
-        trial_days: parseInt(novaAssinatura.value.trial_days),
-        next_billing: nextBilling.toISOString(),
-        created_at: new Date().toISOString(),
-        updated_at: new Date().toISOString(),
-      }
-      assinaturas.value.unshift(newAssinatura)
-      snackbar.success('Assinatura criada com sucesso!')
-    }
-
-    showCreateDialog.value = false
-    resetForm()
-  } catch (error) {
-    snackbar.error('Erro ao salvar assinatura')
-  } finally {
-    loading.value = false
-  }
 }
+
 
 const cancelForm = () => {
   showCreateDialog.value = false
@@ -700,14 +551,14 @@ const cancelForm = () => {
 const resetForm = () => {
   editingAssinatura.value = null
   novaAssinatura.value = {
-    amount: '',
-    description: '',
-    plan_type: 'MONTHLY',
-    currency: 'BRL',
+    provider: 'ASAAS' as const,
     customer_id: '',
-    billing_cycle: '30',
-    trial_days: '0',
-    metadata: '',
+    amount: '',
+    currency: 'BRL' as const,
+    interval: 'MONTHLY' as const,
+    payment_method: 'PIX',
+    description: '',
+    start_at: '',
   }
   formValid.value = false
 }
@@ -716,9 +567,10 @@ const clearFilters = () => {
   searchTerm.value = ''
   selectedStatus.value = 'Todos'
   selectedPlan.value = 'Todos'
+  subscriptionsStore.clearFilters()
+  subscriptionsStore.listSubscriptions()
 }
 
-// Utilitários
 const formatCurrency = (value: number) => {
   return new Intl.NumberFormat('pt-BR', {
     style: 'currency',
@@ -796,9 +648,26 @@ const getPlanIcon = (plan: string) => {
   return icons[plan] || 'mdi-help-circle'
 }
 
-// Lifecycle
-onMounted(() => {
-  // Carregar dados iniciais se necessário
+watch(searchTerm, (newValue) => {
+  if (newValue) {
+    subscriptionsStore.searchSubscriptions(newValue)
+  } else {
+    subscriptionsStore.listSubscriptions()
+  }
+})
+
+watch(selectedStatus, (newValue) => {
+  if (newValue !== 'Todos') {
+    subscriptionsStore.filterByStatus(newValue as any)
+  } else {
+    subscriptionsStore.clearFilters()
+    subscriptionsStore.listSubscriptions()
+  }
+})
+
+onMounted(async () => {
+  await subscriptionsStore.listSubscriptions()
+  await customersStore.listCustomers()
 })
 </script>
 

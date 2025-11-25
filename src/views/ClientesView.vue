@@ -1,27 +1,31 @@
 <script setup lang="ts">
-import { ref, computed, onMounted } from 'vue'
-import { useSnackbar } from '@/stores/useSnackbar'
+import { ref, computed, onMounted, watch } from 'vue'
+import { useCustomers } from '@/stores/useCustomers'
 import { formatCPF, formatPhone, formatDate } from '@/utils/formatters'
 import { validateCPF, validateEmail, validatePhone } from '@/utils/validators'
 
-const snackbar = useSnackbar()
+const customersStore = useCustomers()
 
-// Estado
 const showCreateDialog = ref(false)
 const showViewDialog = ref(false)
 const editingCliente = ref<any>(null)
 const selectedCliente = ref<any>(null)
 const searchTerm = ref('')
 const selectedStatus = ref('Todos')
-const loading = ref(false)
 const formValid = ref(false)
 
 const novoCliente = ref({
-  name: '',
+  provider: 'ASAAS' as const,
+  first_name: '',
+  last_name: '',
   email: '',
-  document: '',
+  cpf: '',
   phone: '',
   address: '',
+  city: '',
+  state: '',
+  zip_code: '',
+  country: 'BR',
 })
 
 const statusOptions = ['Todos', 'Ativo', 'Inativo']
@@ -33,81 +37,58 @@ const rules = {
   phone: (value: string) => validatePhone(value) || 'Telefone inválido',
 }
 
-// Headers da tabela
 const headers = [
   { title: 'ID', key: 'id', sortable: true },
   { title: 'Cliente', key: 'name', sortable: true },
   { title: 'CPF', key: 'document' },
   { title: 'Telefone', key: 'phone' },
+  { title: 'Provedor', key: 'provider', sortable: true },
+  { title: 'ID no Provedor', key: 'provider_customer_id' },
   { title: 'Criado em', key: 'created_at', sortable: true },
   { title: 'Ações', key: 'actions', sortable: false },
 ]
 
-// Dados mockados para teste
-const clientes = ref([
-  {
-    id: 'cus_001',
-    name: 'João Silva',
-    email: 'joao@exemplo.com',
-    document: '12345678901',
-    phone: '11999999999',
-    address: 'Rua das Flores, 123, Centro, São Paulo - SP',
-    created_at: '2024-01-15T10:30:00Z',
-    updated_at: '2024-01-15T10:30:00Z',
-  },
-  {
-    id: 'cus_002',
-    name: 'Maria Santos',
-    email: 'maria@exemplo.com',
-    document: '98765432100',
-    phone: '11888888888',
-    address: 'Av. Paulista, 1000, Bela Vista, São Paulo - SP',
-    created_at: '2024-01-14T14:20:00Z',
-    updated_at: '2024-01-14T14:20:00Z',
-  },
-  {
-    id: 'cus_003',
-    name: 'Pedro Costa',
-    email: 'pedro@exemplo.com',
-    document: '11122233344',
-    phone: '11777777777',
-    address: 'Rua Augusta, 500, Consolação, São Paulo - SP',
-    created_at: '2024-01-13T09:15:00Z',
-    updated_at: '2024-01-13T09:15:00Z',
-  },
-])
-
-// Computed
 const filteredClientes = computed(() => {
-  let filtered = clientes.value
+  let filtered = customersStore.customers
 
   if (searchTerm.value) {
     const search = searchTerm.value.toLowerCase()
     filtered = filtered.filter(
-      (cliente) =>
-        cliente.name.toLowerCase().includes(search) ||
-        cliente.email.toLowerCase().includes(search) ||
-        cliente.document.includes(search),
+      (cliente: any) => {
+        const fullName = cliente.full_name || cliente.name || `${cliente.first_name || ''} ${cliente.last_name || ''}`.trim()
+        return fullName?.toLowerCase().includes(search) ||
+          cliente.email?.toLowerCase().includes(search) ||
+          cliente.cpf?.includes(search) ||
+          cliente.document?.includes(search)
+      },
     )
   }
 
   return filtered
 })
 
-const activeClients = computed(() => clientes.value.length)
+const activeClients = computed(() => customersStore.customers.length)
 const newThisMonth = computed(() => {
   const thisMonth = new Date().getMonth()
-  return clientes.value.filter((cliente) => {
+  return customersStore.customers.filter((cliente: any) => {
+    if (!cliente.created_at) return false
     const clientMonth = new Date(cliente.created_at).getMonth()
     return clientMonth === thisMonth
   }).length
 })
-const withPaymentMethod = computed(() => clientes.value.length)
+const withPaymentMethod = computed(() => customersStore.customers.length)
 
-// Métodos
 const clearFilters = () => {
   searchTerm.value = ''
   selectedStatus.value = 'Todos'
+  customersStore.clearFilters()
+}
+
+const formatZipCode = () => {
+  const value = novoCliente.value.zip_code.replace(/\D/g, '')
+  if (value.length <= 8) {
+    novoCliente.value.zip_code = value.replace(/(\d{5})(\d{3})/, '$1-$2')
+  }
 }
 
 const viewCliente = (cliente: any) => {
@@ -117,78 +98,96 @@ const viewCliente = (cliente: any) => {
 
 const editCliente = (cliente: any) => {
   editingCliente.value = cliente
-  novoCliente.value = { ...cliente }
+  const nameParts = (cliente.full_name || cliente.name || '').split(' ')
+  const firstName = nameParts[0] || ''
+  const lastName = nameParts.slice(1).join(' ') || ''
+
+  novoCliente.value = {
+    provider: 'ASAAS' as const,
+    first_name: firstName,
+    last_name: lastName,
+    email: cliente.email || '',
+    cpf: cliente.cpf || '',
+    phone: cliente.phone || '',
+    address: cliente.address || '',
+    city: cliente.city || '',
+    state: cliente.state || '',
+    zip_code: cliente.zip_code || '',
+    country: cliente.country || 'BR',
+  }
   showCreateDialog.value = true
 }
 
 const deleteCliente = async (cliente: any) => {
   if (confirm('Tem certeza que deseja excluir este cliente?')) {
-    loading.value = true
     try {
-      await new Promise((resolve) => setTimeout(resolve, 1000))
-      const index = clientes.value.findIndex((c) => c.id === cliente.id)
-      if (index !== -1) {
-        clientes.value.splice(index, 1)
-        snackbar.success('Cliente excluído com sucesso!')
-      }
+      await customersStore.deleteCustomer(cliente.id)
     } catch (error) {
-      snackbar.error('Erro ao excluir cliente')
-    } finally {
-      loading.value = false
     }
   }
 }
 
 const saveCliente = async () => {
   if (!formValid.value) {
-    snackbar.error('Por favor, preencha todos os campos obrigatórios corretamente.')
     return
   }
 
-  loading.value = true
   try {
-    await new Promise((resolve) => setTimeout(resolve, 1000))
+    const normalizedZipCode = novoCliente.value.zip_code ? novoCliente.value.zip_code.replace(/\D/g, '') : ''
+    const normalizedCpf = novoCliente.value.cpf ? novoCliente.value.cpf.replace(/\D/g, '') : ''
+    const normalizedPhone = novoCliente.value.phone ? novoCliente.value.phone.replace(/\D/g, '') : ''
+    const normalizedState = novoCliente.value.state ? novoCliente.value.state.toUpperCase().trim() : ''
 
     if (editingCliente.value) {
-      // Editar
-      const index = clientes.value.findIndex((c) => c.id === editingCliente.value.id)
-      if (index !== -1) {
-        clientes.value[index] = {
-          ...editingCliente.value,
-          ...novoCliente.value,
-          updated_at: new Date().toISOString(),
-        }
-      }
-      snackbar.success('Cliente atualizado com sucesso!')
+      await customersStore.updateCustomer(editingCliente.value.id, {
+        first_name: novoCliente.value.first_name,
+        last_name: novoCliente.value.last_name,
+        email: novoCliente.value.email,
+        cpf: normalizedCpf || undefined,
+        phone: normalizedPhone || undefined,
+        address: novoCliente.value.address,
+        city: novoCliente.value.city,
+        state: normalizedState || undefined,
+        zip_code: normalizedZipCode || undefined,
+        country: novoCliente.value.country,
+      })
     } else {
-      // Criar
-      const newCliente = {
-        id: `cus_${Date.now()}`,
-        ...novoCliente.value,
-        created_at: new Date().toISOString(),
-        updated_at: new Date().toISOString(),
-      }
-      clientes.value.unshift(newCliente)
-      snackbar.success('Cliente criado com sucesso!')
+      await customersStore.createCustomer({
+        provider: novoCliente.value.provider,
+        first_name: novoCliente.value.first_name,
+        last_name: novoCliente.value.last_name,
+        email: novoCliente.value.email,
+        cpf: normalizedCpf || undefined,
+        phone: normalizedPhone || undefined,
+        address: novoCliente.value.address,
+        city: novoCliente.value.city,
+        state: normalizedState || undefined,
+        zip_code: normalizedZipCode || undefined,
+        country: novoCliente.value.country,
+      })
     }
 
     showCreateDialog.value = false
     resetForm()
+    await customersStore.listCustomers()
   } catch (error) {
-    snackbar.error('Erro ao salvar cliente')
-  } finally {
-    loading.value = false
   }
 }
 
 const resetForm = () => {
   editingCliente.value = null
   novoCliente.value = {
-    name: '',
+    provider: 'ASAAS' as const,
+    first_name: '',
+    last_name: '',
     email: '',
-    document: '',
+    cpf: '',
     phone: '',
     address: '',
+    city: '',
+    state: '',
+    zip_code: '',
+    country: 'BR',
   }
   formValid.value = false
 }
@@ -198,9 +197,16 @@ const cancelForm = () => {
   resetForm()
 }
 
-// Lifecycle
-onMounted(() => {
-  // Carregar dados se necessário
+watch(searchTerm, (newValue) => {
+  if (newValue) {
+    customersStore.searchCustomers(newValue)
+  } else {
+    customersStore.listCustomers()
+  }
+})
+
+onMounted(async () => {
+  await customersStore.listCustomers()
 })
 </script>
 
@@ -235,7 +241,7 @@ onMounted(() => {
           <v-icon size="24" color="primary">mdi-account-group</v-icon>
         </div>
         <div class="stat-content">
-          <div class="stat-value">{{ clientes.length }}</div>
+          <div class="stat-value">{{ customersStore.customers.length }}</div>
           <div class="stat-label">Total de Clientes</div>
         </div>
       </div>
@@ -310,7 +316,7 @@ onMounted(() => {
       <v-data-table
         :headers="headers"
         :items="filteredClientes"
-        :loading="loading"
+        :loading="customersStore.loading"
         :items-per-page="20"
         class="clientes-table"
         hover
@@ -327,7 +333,7 @@ onMounted(() => {
               <v-icon>mdi-account</v-icon>
             </v-avatar>
             <div>
-              <div class="customer-name">{{ item.name }}</div>
+              <div class="customer-name">{{ item.full_name || item.name || `${item.first_name || ''} ${item.last_name || ''}`.trim() }}</div>
               <div class="customer-email">{{ item.email }}</div>
             </div>
           </div>
@@ -336,7 +342,7 @@ onMounted(() => {
         <template #item.document="{ item }">
           <div class="document-cell">
             <v-icon size="16" color="primary" class="mr-2">mdi-card-account-details</v-icon>
-            <span>{{ formatCPF(item.document) }}</span>
+            <span>{{ formatCPF(item.cpf || item.document || '') }}</span>
           </div>
         </template>
 
@@ -344,6 +350,26 @@ onMounted(() => {
           <div class="phone-cell">
             <v-icon size="16" color="info" class="mr-2">mdi-phone</v-icon>
             <span>{{ formatPhone(item.phone) }}</span>
+          </div>
+        </template>
+
+        <template #item.provider="{ item }">
+          <div class="provider-cell">
+            <v-chip
+              :color="item.provider === 'ASAAS' ? 'primary' : 'secondary'"
+              size="small"
+              variant="tonal"
+            >
+              <v-icon size="14" class="mr-1">mdi-cloud</v-icon>
+              {{ item.provider || 'N/A' }}
+            </v-chip>
+          </div>
+        </template>
+
+        <template #item.provider_customer_id="{ item }">
+          <div class="provider-id-cell">
+            <v-icon size="16" color="success" class="mr-2">mdi-identifier</v-icon>
+            <span class="font-mono">{{ item.provider_customer_id || 'N/A' }}</span>
           </div>
         </template>
 
@@ -397,9 +423,19 @@ onMounted(() => {
             <v-row>
               <v-col cols="12" md="6">
                 <v-text-field
-                  v-model="novoCliente.name"
-                  label="Nome Completo"
-                  placeholder="João Silva"
+                  v-model="novoCliente.first_name"
+                  label="Primeiro Nome"
+                  placeholder="João"
+                  variant="outlined"
+                  :rules="[rules.required]"
+                  required
+                />
+              </v-col>
+              <v-col cols="12" md="6">
+                <v-text-field
+                  v-model="novoCliente.last_name"
+                  label="Sobrenome"
+                  placeholder="Silva"
                   variant="outlined"
                   :rules="[rules.required]"
                   required
@@ -418,9 +454,9 @@ onMounted(() => {
               </v-col>
               <v-col cols="12" md="6">
                 <v-text-field
-                  v-model="novoCliente.document"
+                  v-model="novoCliente.cpf"
                   label="CPF"
-                  placeholder="000.000.000-00"
+                  placeholder="00000000000"
                   variant="outlined"
                   :rules="[rules.required, rules.cpf]"
                   required
@@ -430,19 +466,45 @@ onMounted(() => {
                 <v-text-field
                   v-model="novoCliente.phone"
                   label="Telefone"
-                  placeholder="(11) 99999-9999"
+                  placeholder="11999999999"
                   variant="outlined"
                   :rules="[rules.required, rules.phone]"
                   required
                 />
               </v-col>
+              <v-col cols="12" md="6">
+                <v-text-field
+                  v-model="novoCliente.zip_code"
+                  label="CEP"
+                  placeholder="00000-000"
+                  variant="outlined"
+                  @input="formatZipCode"
+                  maxlength="9"
+                />
+              </v-col>
               <v-col cols="12">
-                <v-textarea
+                <v-text-field
                   v-model="novoCliente.address"
                   label="Endereço"
-                  placeholder="Rua, número, bairro, cidade - UF, CEP"
+                  placeholder="Rua, número"
                   variant="outlined"
-                  rows="3"
+                />
+              </v-col>
+              <v-col cols="12" md="6">
+                <v-text-field
+                  v-model="novoCliente.city"
+                  label="Cidade"
+                  placeholder="São Paulo"
+                  variant="outlined"
+                />
+              </v-col>
+              <v-col cols="12" md="6">
+                <v-text-field
+                  v-model="novoCliente.state"
+                  label="Estado (UF)"
+                  placeholder="SP"
+                  variant="outlined"
+                  maxlength="2"
                 />
               </v-col>
             </v-row>
@@ -455,7 +517,7 @@ onMounted(() => {
           <v-btn
             color="primary"
             @click="saveCliente"
-            :loading="loading"
+            :loading="customersStore.loading"
             :disabled="!formValid"
             class="save-btn"
           >
@@ -488,7 +550,7 @@ onMounted(() => {
             </div>
             <div class="detail-item">
               <div class="detail-label">Nome</div>
-              <div class="detail-value">{{ selectedCliente?.name }}</div>
+              <div class="detail-value">{{ selectedCliente?.full_name || selectedCliente?.name || `${selectedCliente?.first_name || ''} ${selectedCliente?.last_name || ''}`.trim() }}</div>
             </div>
             <div class="detail-item">
               <div class="detail-label">E-mail</div>
@@ -496,11 +558,27 @@ onMounted(() => {
             </div>
             <div class="detail-item">
               <div class="detail-label">CPF</div>
-              <div class="detail-value">{{ formatCPF(selectedCliente?.document) }}</div>
+              <div class="detail-value">{{ formatCPF(selectedCliente?.cpf || selectedCliente?.document || '') }}</div>
             </div>
             <div class="detail-item">
               <div class="detail-label">Telefone</div>
               <div class="detail-value">{{ formatPhone(selectedCliente?.phone) }}</div>
+            </div>
+            <div class="detail-item">
+              <div class="detail-label">Provedor</div>
+              <div class="detail-value">
+                <v-chip
+                  :color="selectedCliente?.provider === 'ASAAS' ? 'primary' : 'secondary'"
+                  size="small"
+                  variant="tonal"
+                >
+                  {{ selectedCliente?.provider || 'N/A' }}
+                </v-chip>
+              </div>
+            </div>
+            <div class="detail-item">
+              <div class="detail-label">ID no Provedor</div>
+              <div class="detail-value font-mono">{{ selectedCliente?.provider_customer_id || 'N/A' }}</div>
             </div>
             <div class="detail-item full-width">
               <div class="detail-label">Endereço</div>

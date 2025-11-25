@@ -1,8 +1,11 @@
 <script setup>
 import { ref } from 'vue'
 import { useRouter } from 'vue-router'
+import http from '@/services/http'
+import { useSnackbar } from '@/stores/useSnackbar'
 
 const router = useRouter()
+const snackbar = useSnackbar()
 const email = ref('')
 const loading = ref(false)
 const success = ref(false)
@@ -18,10 +21,15 @@ const handleResetPassword = async () => {
   error.value = ''
 
   try {
-    await new Promise((resolve) => setTimeout(resolve, 1000))
+    await http.post('/auth/forgot-password', {
+      email: email.value,
+    })
     success.value = true
-  } catch (err) {
-    error.value = 'Erro ao enviar email de redefinição. Tente novamente.'
+    snackbar.success('Email de redefinição enviado com sucesso!')
+  } catch (err: any) {
+    const errorMessage = err.response?.data?.message || 'Erro ao enviar email de redefinição. Tente novamente.'
+    error.value = errorMessage
+    snackbar.error(errorMessage)
   } finally {
     loading.value = false
   }

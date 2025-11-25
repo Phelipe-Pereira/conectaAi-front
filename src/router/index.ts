@@ -2,6 +2,7 @@ import { createRouter, createWebHistory } from 'vue-router'
 import DefaultLayout from '@/layouts/DefaultLayout.vue'
 import LoginView from '@/views/LoginView.vue'
 import HomeView from '@/views/HomeView.vue'
+import { useAuth } from '@/stores/useAuth'
 
 const router = createRouter({
   history: createWebHistory('/'),
@@ -47,11 +48,6 @@ const router = createRouter({
           component: () => import('@/views/CobrancasView.vue'),
         },
         {
-          path: 'parcelamentos',
-          name: 'parcelamentos',
-          component: () => import('@/views/ParcelamentosView.vue'),
-        },
-        {
           path: 'assinaturas',
           name: 'assinaturas',
           component: () => import('@/views/AssinaturasView.vue'),
@@ -86,16 +82,33 @@ const router = createRouter({
   ],
 })
 
-router.beforeEach((to, _from, next) => {
-  const isAuthenticated = localStorage.getItem('isAuthenticated') === 'true'
+router.beforeEach(async (to, _from, next) => {
+  const authStore = useAuth()
 
-  if (to.meta.requiresAuth && !isAuthenticated) {
-    next('/login')
-  } else if ((to.name === 'login' || to.name === 'register') && isAuthenticated) {
-    next('/dashboard')
-  } else {
-    next()
+  if (to.meta.requiresAuth) {
+    const token = localStorage.getItem('auth_token')
+    if (!token) {
+      next('/login')
+      return
+    }
+
+    if (!authStore.user) {
+      await authStore.checkAuth()
+    }
+
+    if (!authStore.isAuthenticated) {
+      next('/login')
+      return
+    }
   }
+
+  // Se já está autenticado e tenta acessar login/register, redirecionar para dashboard
+  if ((to.name === 'login' || to.name === 'register') && authStore.isAuthenticated) {
+    next('/dashboard')
+    return
+  }
+
+  next()
 })
 
 export default router

@@ -64,28 +64,28 @@ export const apiClient = {
       http.delete(`/customers/${id}`)
   },
 
-  // Charges
+  // Charges (Payments)
   charges: {
     list: (params?: ChargeListParams) =>
-      http.get<ChargeList>('/charges', { params }),
+      http.get<ChargeList>('/payments', { params }),
 
     get: (id: string) =>
-      http.get<Charge>(`/charges/${id}`),
+      http.get<Charge>(`/payments/${id}`),
 
     create: (data: CreateChargeRequest) =>
-      http.post<Charge>('/charges', data),
+      http.post<Charge>('/payments', data),
 
     update: (id: string, data: { description?: string; metadata?: Record<string, unknown> }) =>
-      http.patch<Charge>(`/charges/${id}`, data),
+      http.patch<Charge>(`/payments/${id}`, data),
 
     cancel: (id: string) =>
-      http.delete<Charge>(`/charges/${id}`),
+      http.delete<Charge>(`/payments/${id}`),
 
     capture: (id: string, data?: { amount_to_capture?: number }) =>
-      http.post<Charge>(`/charges/${id}/capture`, data),
+      http.post<Charge>(`/payments/${id}/capture`, data),
 
     refund: (id: string, data: { amount?: number; reason?: string; metadata?: Record<string, unknown> }) =>
-      http.post<components['schemas']['Refund']>(`/charges/${id}/refunds`, data)
+      http.post<components['schemas']['Refund']>(`/payments/${id}/refunds`, data)
   },
 
   // Subscriptions

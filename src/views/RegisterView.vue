@@ -1,18 +1,17 @@
 <script setup>
 import { ref } from 'vue'
 import { useRouter } from 'vue-router'
+import { useAuth } from '@/stores/useAuth'
 
 const router = useRouter()
-const loading = ref(false)
+const authStore = useAuth()
 const error = ref('')
 
 const formData = ref({
-  nome: '',
+  username: '',
   email: '',
   senha: '',
   confirmarSenha: '',
-  empresa: '',
-  telefone: '',
   termos: false,
 })
 
@@ -23,6 +22,12 @@ const validateEmail = (email) => {
 
 const validatePassword = (password) => {
   return password.length >= 6
+}
+
+const validateUsername = (username) => {
+  // Apenas letras, números, ponto, underscore ou hífen
+  const usernameRegex = /^[a-zA-Z0-9._-]+$/
+  return usernameRegex.test(username) && username.length >= 3 && username.length <= 50
 }
 
 const validatePhone = (phone) => {
@@ -46,14 +51,17 @@ const handleRegister = async () => {
   error.value = ''
 
   if (
-    !formData.value.nome ||
+    !formData.value.username ||
     !formData.value.email ||
     !formData.value.senha ||
-    !formData.value.confirmarSenha ||
-    !formData.value.empresa ||
-    !formData.value.telefone
+    !formData.value.confirmarSenha
   ) {
     error.value = 'Por favor, preencha todos os campos obrigatórios.'
+    return
+  }
+
+  if (!validateUsername(formData.value.username)) {
+    error.value = 'Username deve ter entre 3 e 50 caracteres e conter apenas letras, números, ponto, underscore ou hífen (sem espaços).'
     return
   }
 
@@ -62,8 +70,15 @@ const handleRegister = async () => {
     return
   }
 
-  if (!validatePassword(formData.value.senha)) {
-    error.value = 'A senha deve ter pelo menos 6 caracteres.'
+  if (formData.value.senha.length < 8) {
+    error.value = 'A senha deve ter pelo menos 8 caracteres.'
+    return
+  }
+
+  // Validar senha forte: maiúscula, minúscula, número e caractere especial
+  const passwordRegex = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&])[A-Za-z\d@$!%*?&]{8,}$/
+  if (!passwordRegex.test(formData.value.senha)) {
+    error.value = 'A senha deve conter: letra maiúscula, minúscula, número e caractere especial.'
     return
   }
 
@@ -72,37 +87,22 @@ const handleRegister = async () => {
     return
   }
 
-  if (!validatePhone(formData.value.telefone)) {
-    error.value = 'Por favor, insira um telefone válido no formato (00) 00000-0000.'
-    return
-  }
-
   if (!formData.value.termos) {
     error.value = 'Você precisa aceitar os termos de serviço.'
     return
   }
 
-  loading.value = true
-
-  try {
-    await new Promise((resolve) => setTimeout(resolve, 1000))
-
-    localStorage.setItem(
-      'userData',
-      JSON.stringify({
-        nome: formData.value.nome,
+  const success = await authStore.register({
+    name: formData.value.username,
         email: formData.value.email,
-        empresa: formData.value.empresa,
-        telefone: formData.value.telefone,
-      }),
-    )
+    password: formData.value.senha,
+    confirmPassword: formData.value.confirmarSenha,
+  })
 
-    router.push({ name: 'login' })
-  } catch (err) {
-    error.value = 'Erro ao criar conta. Tente novamente.'
-  } finally {
-    loading.value = false
+  if (success) {
+    router.push({ name: 'dashboard' })
   }
+  // O erro já é exibido pelo snackbar no store
 }
 
 const goToLogin = () => {
@@ -124,15 +124,21 @@ const goToLogin = () => {
       <form @submit.prevent="handleRegister" class="register-form">
         <div class="form-grid">
           <div class="form-group">
-            <label for="nome">Nome completo</label>
+            <label for="username">Username</label>
             <input
-              id="nome"
-              v-model="formData.nome"
+              id="username"
+              v-model="formData.username"
               type="text"
               class="input"
               required
-              placeholder="Digite seu nome"
+              placeholder="gabriela.aguiar ou gabriela_aguiar"
+              pattern="[a-zA-Z0-9._\-]+"
+              minlength="3"
+              maxlength="50"
             />
+            <small style="color: var(--text-secondary); font-size: 0.75rem;">
+              Apenas letras, números, ponto, underscore ou hífen (sem espaços). Ex: gabriela.aguiar
+            </small>
           </div>
 
           <div class="form-group">
@@ -148,32 +154,6 @@ const goToLogin = () => {
           </div>
 
           <div class="form-group">
-            <label for="empresa">Nome da empresa</label>
-            <input
-              id="empresa"
-              v-model="formData.empresa"
-              type="text"
-              class="input"
-              required
-              placeholder="Digite o nome da sua empresa"
-            />
-          </div>
-
-          <div class="form-group">
-            <label for="telefone">Telefone</label>
-            <input
-              id="telefone"
-              v-model="formData.telefone"
-              type="tel"
-              class="input"
-              required
-              placeholder="(00) 00000-0000"
-              @input="formatPhone"
-              maxlength="15"
-            />
-          </div>
-
-          <div class="form-group">
             <label for="senha">Senha</label>
             <input
               id="senha"
@@ -182,7 +162,11 @@ const goToLogin = () => {
               class="input"
               required
               placeholder="Digite sua senha"
+              minlength="8"
             />
+            <small style="color: var(--text-secondary); font-size: 0.75rem;">
+              Mínimo 8 caracteres: maiúscula, minúscula, número e caractere especial
+            </small>
           </div>
 
           <div class="form-group">
@@ -208,9 +192,9 @@ const goToLogin = () => {
           </label>
         </div>
 
-        <button type="submit" class="btn btn-primary register-button" :disabled="loading">
-          <span v-if="loading" class="loading-spinner"></span>
-          {{ loading ? 'Criando conta...' : 'Criar conta' }}
+        <button type="submit" class="btn btn-primary register-button" :disabled="authStore.loading">
+          <span v-if="authStore.loading" class="loading-spinner"></span>
+          {{ authStore.loading ? 'Criando conta...' : 'Criar conta' }}
         </button>
 
         <p v-if="error" class="error-message">{{ error }}</p>
@@ -277,7 +261,7 @@ h1 {
 
 .form-grid {
   display: grid;
-  grid-template-columns: 1fr 1fr;
+  grid-template-columns: 1fr;
   gap: var(--spacing-lg);
 }
 

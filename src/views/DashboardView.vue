@@ -1,6 +1,9 @@
 <script setup>
-import { ref, computed, onMounted } from 'vue'
+import { ref, onMounted, watch } from 'vue'
 import { Line } from 'vue-chartjs'
+import { useCharges } from '@/stores/useCharges'
+import { useSubscriptions } from '@/stores/useSubscriptions'
+import { useCustomers } from '@/stores/useCustomers'
 import {
   Chart as ChartJS,
   CategoryScale,
@@ -24,12 +27,16 @@ ChartJS.register(
   Filler,
 )
 
+const chargesStore = useCharges()
+const subscriptionsStore = useSubscriptions()
+const customersStore = useCustomers()
+
 const vendasMensais = ref({
   labels: ['Jan', 'Fev', 'Mar', 'Abr', 'Mai', 'Jun', 'Jul', 'Ago', 'Set', 'Out', 'Nov', 'Dez'],
   datasets: [
     {
       label: 'Vendas (R$)',
-      data: [12500, 15800, 14200, 18900, 22100, 25600, 23400, 28700, 31200, 28900, 34500, 42100],
+      data: Array(12).fill(0),
       borderColor: '#007AFF',
       backgroundColor: 'rgba(0, 122, 255, 0.1)',
       borderWidth: 3,
@@ -49,7 +56,7 @@ const receitaMensal = ref({
   datasets: [
     {
       label: 'Receita (R$)',
-      data: [9800, 12400, 11800, 15200, 17800, 20100, 18900, 22500, 24800, 23100, 27600, 33400],
+      data: Array(12).fill(0),
       borderColor: '#4CAF50',
       backgroundColor: 'rgba(76, 175, 80, 0.1)',
       borderWidth: 3,
@@ -65,28 +72,68 @@ const receitaMensal = ref({
 })
 
 const estatisticas = ref({
-  vendasTotal: 4200,
-  receitaTotal: 0,
   crescimentoVendas: 0,
   crescimentoReceita: 0,
-  mediaVendas: 350,
-  mediaReceita: 0,
 })
 
-const calcularEstatisticas = () => {
-  const vendas = vendasMensais.value.datasets[0].data
-  const receitas = receitaMensal.value.datasets[0].data
+const calcularDadosMensais = () => {
+  const meses = Array(12).fill(0)
+  const receitasMensais = Array(12).fill(0)
+  const agora = new Date()
+  const anoAtual = agora.getFullYear()
 
-  estatisticas.value.vendasTotal = vendas.reduce((a, b) => a + b, 0)
-  estatisticas.value.receitaTotal = receitas.reduce((a, b) => a + b, 0)
-  estatisticas.value.mediaVendas = Math.round(estatisticas.value.vendasTotal / 12)
-  estatisticas.value.mediaReceita = Math.round(estatisticas.value.receitaTotal / 12)
+  chargesStore.charges.forEach((charge) => {
+    if (!charge.created_at) return
 
-  const crescimentoVendas = ((vendas[11] - vendas[10]) / vendas[10]) * 100
-  const crescimentoReceita = ((receitas[11] - receitas[10]) / receitas[10]) * 100
+    const dataCriacao = new Date(charge.created_at)
+    if (dataCriacao.getFullYear() === anoAtual) {
+      const mes = dataCriacao.getMonth()
+      meses[mes] += 1
 
-  estatisticas.value.crescimentoVendas = Math.round(crescimentoVendas * 10) / 10
-  estatisticas.value.crescimentoReceita = Math.round(crescimentoReceita * 10) / 10
+      if (charge.status === 'PAID' && charge.amount) {
+        receitasMensais[mes] += charge.amount
+      }
+    }
+  })
+
+  vendasMensais.value = {
+    ...vendasMensais.value,
+    datasets: [
+      {
+        ...vendasMensais.value.datasets[0],
+        data: meses,
+      },
+    ],
+  }
+
+  receitaMensal.value = {
+    ...receitaMensal.value,
+    datasets: [
+      {
+        ...receitaMensal.value.datasets[0],
+        data: receitasMensais,
+      },
+    ],
+  }
+
+  const mesAtual = agora.getMonth()
+  const mesAnterior = mesAtual > 0 ? mesAtual - 1 : 11
+
+  if (meses[mesAnterior] > 0) {
+    estatisticas.value.crescimentoVendas = Math.round(
+      ((meses[mesAtual] - meses[mesAnterior]) / meses[mesAnterior]) * 100 * 10
+    ) / 10
+  } else {
+    estatisticas.value.crescimentoVendas = 0
+  }
+
+  if (receitasMensais[mesAnterior] > 0) {
+    estatisticas.value.crescimentoReceita = Math.round(
+      ((receitasMensais[mesAtual] - receitasMensais[mesAnterior]) / receitasMensais[mesAnterior]) * 100 * 10
+    ) / 10
+  } else {
+    estatisticas.value.crescimentoReceita = 0
+  }
 }
 
 const chartOptions = {
@@ -242,9 +289,23 @@ const doughnutOptions = {
   },
 }
 
-onMounted(() => {
-  calcularEstatisticas()
+onMounted(async () => {
+  await Promise.all([
+    chargesStore.listCharges(),
+    subscriptionsStore.listSubscriptions(),
+    customersStore.listCustomers(),
+  ])
+
+  calcularDadosMensais()
 })
+
+watch(
+  () => chargesStore.charges,
+  () => {
+    calcularDadosMensais()
+  },
+  { deep: true }
+)
 </script>
 
 <template>
@@ -254,7 +315,7 @@ onMounted(() => {
         <div class="stat-icon">📈</div>
         <div class="stat-content">
           <h3>Vendas Totais</h3>
-          <div class="stat-value">{{ estatisticas.vendasTotal.toLocaleString('pt-BR') }}</div>
+          <div class="stat-value">{{ chargesStore.charges.length.toLocaleString('pt-BR') }}</div>
           <div class="stat-change" :class="{ positive: estatisticas.crescimentoVendas > 0 }">
             {{ estatisticas.crescimentoVendas > 0 ? '+' : '' }}{{ estatisticas.crescimentoVendas }}%
           </div>
@@ -266,7 +327,7 @@ onMounted(() => {
         <div class="stat-icon">💰</div>
         <div class="stat-content">
           <h3>Receita Total</h3>
-          <div class="stat-value">R$ {{ estatisticas.receitaTotal.toLocaleString('pt-BR') }}</div>
+          <div class="stat-value">R$ {{ chargesStore.totalAmount.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) }}</div>
           <div class="stat-change" :class="{ positive: estatisticas.crescimentoReceita > 0 }">
             {{ estatisticas.crescimentoReceita > 0 ? '+' : ''
             }}{{ estatisticas.crescimentoReceita }}%
@@ -276,20 +337,20 @@ onMounted(() => {
       </div>
 
       <div class="stat-card">
-        <div class="stat-icon">📊</div>
+        <div class="stat-icon">👥</div>
         <div class="stat-content">
-          <h3>Média de Vendas</h3>
-          <div class="stat-value">{{ estatisticas.mediaVendas.toLocaleString('pt-BR') }}</div>
-          <div class="stat-subtitle">por mês</div>
+          <h3>Total de Clientes</h3>
+          <div class="stat-value">{{ customersStore.customers.length.toLocaleString('pt-BR') }}</div>
+          <div class="stat-subtitle">cadastrados</div>
         </div>
       </div>
 
       <div class="stat-card">
-        <div class="stat-icon">🎯</div>
+        <div class="stat-icon">🔄</div>
         <div class="stat-content">
-          <h3>Média de Receita</h3>
-          <div class="stat-value">R$ {{ estatisticas.mediaReceita.toLocaleString('pt-BR') }}</div>
-          <div class="stat-subtitle">por mês</div>
+          <h3>Assinaturas Ativas</h3>
+          <div class="stat-value">{{ subscriptionsStore.subscriptions.filter(s => s.status === 'ACTIVE').length.toLocaleString('pt-BR') }}</div>
+          <div class="stat-subtitle">ativas</div>
         </div>
       </div>
     </div>

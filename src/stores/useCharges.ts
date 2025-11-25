@@ -59,11 +59,15 @@ export const useCharges = defineStore('charges', () => {
     loading.value = true
     try {
       const response = await apiClient.charges.list(params)
-      charges.value = response.data.items || []
-      totalItems.value = response.data.items?.length || 0
-      return response.data
-    } catch (error) {
-      snackbar.error('Erro ao carregar cobranças')
+      const pageData = response.data as any
+      const items = pageData.content || pageData.items || []
+
+      charges.value = items
+      totalItems.value = pageData.totalElements || pageData.total || items.length
+      return pageData
+    } catch (error: any) {
+      const errorMessage = error.response?.data?.message || 'Erro ao carregar cobranças'
+      snackbar.error(errorMessage)
       throw error
     } finally {
       loading.value = false
@@ -92,8 +96,13 @@ export const useCharges = defineStore('charges', () => {
       totalItems.value += 1
       snackbar.success('Cobrança criada com sucesso!')
       return response.data
-    } catch (error) {
-      snackbar.error('Erro ao criar cobrança')
+    } catch (error: any) {
+      const errorMessage = error.response?.data?.message ||
+                          error.response?.data?.error ||
+                          (Array.isArray(error.response?.data?.errors)
+                            ? error.response.data.errors.map((e: any) => e.message || e).join(', ')
+                            : 'Erro ao criar cobrança')
+      snackbar.error(errorMessage)
       throw error
     } finally {
       loading.value = false
@@ -108,13 +117,11 @@ export const useCharges = defineStore('charges', () => {
     try {
       const response = await apiClient.charges.update(id, data)
 
-      // Atualizar na lista
       const index = charges.value.findIndex((c) => c.id === id)
       if (index !== -1) {
         charges.value[index] = response.data
       }
 
-      // Atualizar cobrança atual se for a mesma
       if (currentCharge.value?.id === id) {
         currentCharge.value = response.data
       }
@@ -134,13 +141,11 @@ export const useCharges = defineStore('charges', () => {
     try {
       const response = await apiClient.charges.cancel(id)
 
-      // Atualizar na lista
       const index = charges.value.findIndex((c) => c.id === id)
       if (index !== -1) {
         charges.value[index] = response.data
       }
 
-      // Atualizar cobrança atual se for a mesma
       if (currentCharge.value?.id === id) {
         currentCharge.value = response.data
       }
@@ -161,13 +166,11 @@ export const useCharges = defineStore('charges', () => {
       const data = amount ? { amount_to_capture: amount } : undefined
       const response = await apiClient.charges.capture(id, data)
 
-      // Atualizar na lista
       const index = charges.value.findIndex((c) => c.id === id)
       if (index !== -1) {
         charges.value[index] = response.data
       }
 
-      // Atualizar cobrança atual se for a mesma
       if (currentCharge.value?.id === id) {
         currentCharge.value = response.data
       }

@@ -1,63 +1,23 @@
 <script setup>
-import { ref, computed } from 'vue'
+import { ref, computed, onMounted } from 'vue'
+import { useCharges } from '@/stores/useCharges'
+import { formatDate, formatCurrency } from '@/utils/formatters'
 
-const transacoes = ref([
-  {
-    id: 1,
-    codigo: 'TXN-2024-001',
-    cliente: 'João Silva',
-    valor: 1250.0,
-    gateway: 'Asaas',
-    status: 'Aprovada',
-    data: '2024-03-15 14:30:25',
-    metodo: 'Cartão de Crédito',
-    parcelas: 3,
-  },
-  {
-    id: 2,
-    codigo: 'TXN-2024-002',
-    cliente: 'Maria Santos',
-    valor: 890.0,
-    gateway: 'Stripe',
-    status: 'Pendente',
-    data: '2024-03-15 15:45:12',
-    metodo: 'PIX',
+const chargesStore = useCharges()
+
+const transacoes = computed(() => {
+  return chargesStore.charges.map((charge: any) => ({
+    id: charge.id,
+    codigo: charge.external_id || charge.id,
+    cliente: charge.customer?.full_name || charge.customer?.email || 'N/A',
+    valor: charge.amount || 0,
+    gateway: charge.provider || 'N/A',
+    status: mapStatus(charge.status),
+    data: charge.created_at || charge.paid_at || new Date().toISOString(),
+    metodo: charge.payment_method || 'N/A',
     parcelas: 1,
-  },
-  {
-    id: 3,
-    codigo: 'TXN-2024-003',
-    cliente: 'Pedro Oliveira',
-    valor: 299.99,
-    gateway: 'MercadoPago',
-    status: 'Recusada',
-    data: '2024-03-15 16:20:30',
-    metodo: 'Cartão de Débito',
-    parcelas: 1,
-  },
-  {
-    id: 4,
-    codigo: 'TXN-2024-004',
-    cliente: 'Ana Costa',
-    valor: 2100.0,
-    gateway: 'Asaas',
-    status: 'Aprovada',
-    data: '2024-03-15 17:10:45',
-    metodo: 'Cartão de Crédito',
-    parcelas: 6,
-  },
-  {
-    id: 5,
-    codigo: 'TXN-2024-005',
-    cliente: 'Carlos Ferreira',
-    valor: 450.0,
-    gateway: 'Stripe',
-    status: 'Cancelada',
-    data: '2024-03-15 18:05:15',
-    metodo: 'PayPal',
-    parcelas: 1,
-  },
-])
+  }))
+})
 
 const showModal = ref(false)
 const selectedTransacao = ref(null)
@@ -66,7 +26,21 @@ const selectedStatus = ref('Todas')
 const selectedGateway = ref('Todos')
 
 const statusOptions = ref(['Todas', 'Aprovada', 'Pendente', 'Recusada', 'Cancelada'])
-const gatewayOptions = ref(['Todos', 'Asaas', 'Stripe', 'MercadoPago', 'PayPal'])
+const gatewayOptions = computed(() => {
+  const providers = new Set(transacoes.value.map((t: any) => t.gateway))
+  return ['Todos', ...Array.from(providers)]
+})
+
+const mapStatus = (status: string) => {
+  const statusMap: Record<string, string> = {
+    PAID: 'Aprovada',
+    PENDING: 'Pendente',
+    FAILED: 'Recusada',
+    CANCELED: 'Cancelada',
+    REFUNDED: 'Reembolsada',
+  }
+  return statusMap[status] || status
+}
 
 const transacoesFiltradas = computed(() => {
   let filtered = transacoes.value
@@ -92,25 +66,25 @@ const transacoesFiltradas = computed(() => {
 
 const estatisticas = computed(() => {
   const total = transacoes.value.length
-  const aprovadas = transacoes.value.filter((t) => t.status === 'Aprovada').length
-  const pendentes = transacoes.value.filter((t) => t.status === 'Pendente').length
-  const recusadas = transacoes.value.filter((t) => t.status === 'Recusada').length
-  const valorTotal = transacoes.value.reduce((sum, t) => sum + t.valor, 0)
+  const aprovadas = transacoes.value.filter((t: any) => t.status === 'Aprovada').length
+  const pendentes = transacoes.value.filter((t: any) => t.status === 'Pendente').length
+  const recusadas = transacoes.value.filter((t: any) => t.status === 'Recusada').length
+  const valorTotal = transacoes.value.reduce((sum: number, t: any) => sum + (t.valor || 0), 0)
   const valorAprovado = transacoes.value
-    .filter((t) => t.status === 'Aprovada')
-    .reduce((sum, t) => sum + t.valor, 0)
+    .filter((t: any) => t.status === 'Aprovada')
+    .reduce((sum: number, t: any) => sum + (t.valor || 0), 0)
 
   return {
     total,
     aprovadas,
     pendentes,
     recusadas,
-    valorTotal: Math.round(valorTotal * 100) / 100,
-    valorAprovado: Math.round(valorAprovado * 100) / 100,
+    valorTotal,
+    valorAprovado,
   }
 })
 
-const openModal = (transacao) => {
+const openModal = (transacao: any) => {
   selectedTransacao.value = transacao
   showModal.value = true
 }
@@ -120,7 +94,7 @@ const closeModal = () => {
   selectedTransacao.value = null
 }
 
-const getStatusColor = (status) => {
+const getStatusColor = (status: string) => {
   switch (status) {
     case 'Aprovada':
       return '#4CAF50'
@@ -135,7 +109,7 @@ const getStatusColor = (status) => {
   }
 }
 
-const getStatusBgColor = (status) => {
+const getStatusBgColor = (status: string) => {
   switch (status) {
     case 'Aprovada':
       return 'rgba(76, 175, 80, 0.1)'
@@ -150,24 +124,18 @@ const getStatusBgColor = (status) => {
   }
 }
 
-const formatarData = (data) => {
-  return (
-    new Date(data).toLocaleDateString('pt-BR') +
-    ' ' +
-    new Date(data).toLocaleTimeString('pt-BR', {
-      hour: '2-digit',
-      minute: '2-digit',
-      second: '2-digit',
-    })
-  )
+const formatarData = (data: string) => {
+  if (!data) return ''
+  return formatDate(data, true)
 }
 
-const formatarMoeda = (valor) => {
-  return valor.toLocaleString('pt-BR', {
-    style: 'currency',
-    currency: 'BRL',
-  })
+const formatarMoeda = (valor: number) => {
+  return formatCurrency(valor)
 }
+
+onMounted(async () => {
+  await chargesStore.listCharges()
+})
 </script>
 
 <template>

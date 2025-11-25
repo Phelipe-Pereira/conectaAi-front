@@ -1,15 +1,33 @@
 <script setup>
-import { ref, onMounted } from 'vue'
+import { ref, onMounted, computed } from 'vue'
+import { useAuth } from '@/stores/useAuth'
+import { formatDate } from '@/utils/formatters'
 
-const userProfile = ref({
-  nome: 'João Silva',
-  email: 'joao@conectaai.com',
-  empresa: 'Conecta Ai Ltda',
-  telefone: '(11) 99999-9999',
-  cargo: 'Administrador',
-  dataCadastro: '15/03/2024',
-  ultimoAcesso: 'Hoje às 14:30',
-  avatar: 'https://ui-avatars.com/api/?name=João+Silva&background=0D8ABC&color=fff',
+const authStore = useAuth()
+
+const userProfile = computed(() => {
+  if (!authStore.user) {
+    return {
+      nome: '',
+      email: '',
+      username: '',
+      cargo: 'Usuário',
+      dataCadastro: '',
+      avatar: '',
+    }
+  }
+
+  const roles = authStore.user.roles || []
+  const isAdmin = roles.some((r: string) => r.includes('ADMIN'))
+
+  return {
+    nome: authStore.user.username || authStore.user.email,
+    email: authStore.user.email,
+    username: authStore.user.username,
+    cargo: isAdmin ? 'Administrador' : 'Usuário',
+    dataCadastro: authStore.user.created_at ? formatDate(authStore.user.created_at) : '',
+    avatar: `https://ui-avatars.com/api/?name=${encodeURIComponent(authStore.user.username || authStore.user.email)}&background=0D8ABC&color=fff`,
+  }
 })
 
 const isEditing = ref(false)
@@ -25,14 +43,17 @@ const saveProfile = async () => {
   message.value = ''
 
   try {
-    await new Promise((resolve) => setTimeout(resolve, 1000))
+    const success = await authStore.updateProfile({
+      username: userProfile.value.username,
+    })
 
-    message.value = 'Perfil atualizado com sucesso!'
-    isEditing.value = false
-
-    setTimeout(() => {
-      message.value = ''
-    }, 3000)
+    if (success) {
+      message.value = 'Perfil atualizado com sucesso!'
+      isEditing.value = false
+      setTimeout(() => {
+        message.value = ''
+      }, 3000)
+    }
   } catch (error) {
     message.value = 'Erro ao atualizar perfil. Tente novamente.'
   } finally {
@@ -45,11 +66,9 @@ const cancelEdit = () => {
   message.value = ''
 }
 
-onMounted(() => {
-  const userData = localStorage.getItem('userData')
-  if (userData) {
-    const parsedData = JSON.parse(userData)
-    userProfile.value = { ...userProfile.value, ...parsedData }
+onMounted(async () => {
+  if (!authStore.user) {
+    await authStore.checkAuth()
   }
 })
 </script>
@@ -91,13 +110,13 @@ onMounted(() => {
 
           <div class="form-grid">
             <div class="form-group">
-              <label>Nome Completo</label>
+              <label>Username</label>
               <input
-                v-model="userProfile.nome"
+                v-model="userProfile.username"
                 type="text"
                 class="input"
                 :disabled="!isEditing"
-                placeholder="Digite seu nome completo"
+                placeholder="Digite seu username"
               />
             </div>
 
@@ -107,30 +126,8 @@ onMounted(() => {
                 v-model="userProfile.email"
                 type="email"
                 class="input"
-                :disabled="!isEditing"
-                placeholder="Digite seu email"
-              />
-            </div>
-
-            <div class="form-group">
-              <label>Telefone</label>
-              <input
-                v-model="userProfile.telefone"
-                type="tel"
-                class="input"
-                :disabled="!isEditing"
-                placeholder="Digite seu telefone"
-              />
-            </div>
-
-            <div class="form-group">
-              <label>Empresa</label>
-              <input
-                v-model="userProfile.empresa"
-                type="text"
-                class="input"
-                :disabled="!isEditing"
-                placeholder="Digite o nome da empresa"
+                :disabled="true"
+                placeholder="Email"
               />
             </div>
 
@@ -140,8 +137,8 @@ onMounted(() => {
                 v-model="userProfile.cargo"
                 type="text"
                 class="input"
-                :disabled="!isEditing"
-                placeholder="Digite seu cargo"
+                :disabled="true"
+                placeholder="Cargo"
               />
             </div>
           </div>

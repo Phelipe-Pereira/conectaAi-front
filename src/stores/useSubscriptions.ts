@@ -53,9 +53,12 @@ export const useSubscriptions = defineStore('subscriptions', () => {
     loading.value = true
     try {
       const response = await apiClient.subscriptions.list(params)
-      subscriptions.value = response.data.items || []
-      totalItems.value = response.data.items?.length || 0
-      return response.data
+      const pageData = response.data as any
+      const items = pageData.content || pageData.items || []
+
+      subscriptions.value = items
+      totalItems.value = pageData.totalElements || pageData.total || items.length
+      return pageData
     } catch (error) {
       snackbar.error('Erro ao carregar assinaturas')
       throw error
@@ -99,13 +102,11 @@ export const useSubscriptions = defineStore('subscriptions', () => {
     try {
       const response = await apiClient.subscriptions.update(id, data)
 
-      // Atualizar na lista
       const index = subscriptions.value.findIndex((s) => s.id === id)
       if (index !== -1) {
         subscriptions.value[index] = response.data
       }
 
-      // Atualizar assinatura atual se for a mesma
       if (currentSubscription.value?.id === id) {
         currentSubscription.value = response.data
       }
@@ -125,13 +126,11 @@ export const useSubscriptions = defineStore('subscriptions', () => {
     try {
       await apiClient.subscriptions.cancel(id)
 
-      // Atualizar na lista
       const index = subscriptions.value.findIndex((s) => s.id === id)
       if (index !== -1) {
         subscriptions.value[index].status = 'CANCELED'
       }
 
-      // Atualizar assinatura atual se for a mesma
       if (currentSubscription.value?.id === id) {
         currentSubscription.value.status = 'CANCELED'
       }
@@ -150,13 +149,11 @@ export const useSubscriptions = defineStore('subscriptions', () => {
     try {
       const response = await apiClient.subscriptions.pause(id)
 
-      // Atualizar na lista
       const index = subscriptions.value.findIndex((s) => s.id === id)
       if (index !== -1) {
         subscriptions.value[index] = response.data
       }
 
-      // Atualizar assinatura atual se for a mesma
       if (currentSubscription.value?.id === id) {
         currentSubscription.value = response.data
       }
@@ -176,13 +173,11 @@ export const useSubscriptions = defineStore('subscriptions', () => {
     try {
       const response = await apiClient.subscriptions.resume(id)
 
-      // Atualizar na lista
       const index = subscriptions.value.findIndex((s) => s.id === id)
       if (index !== -1) {
         subscriptions.value[index] = response.data
       }
 
-      // Atualizar assinatura atual se for a mesma
       if (currentSubscription.value?.id === id) {
         currentSubscription.value = response.data
       }

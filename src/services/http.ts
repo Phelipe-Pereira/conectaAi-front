@@ -2,6 +2,14 @@ import axios, { AxiosInstance, AxiosResponse, AxiosError, InternalAxiosRequestCo
 import { v4 as uuidv4 } from 'uuid'
 import { API_CONFIG, HTTP_STATUS, STORAGE_KEYS } from '@/constants'
 
+interface AuthResponse {
+  user: any
+  access_token: string
+  refresh_token: string
+  token_type: string
+  expires_in: number
+}
+
 // Interface para configuração de retry
 interface RetryConfig extends InternalAxiosRequestConfig {
   _retry?: boolean
@@ -38,7 +46,7 @@ http.interceptors.request.use(
   },
 )
 
-// Interceptor de resposta com retry e mock data
+// Interceptor de resposta com retry e tratamento de erros
 http.interceptors.response.use(
   (response: AxiosResponse) => {
     return response
@@ -46,8 +54,56 @@ http.interceptors.response.use(
   async (error: AxiosError) => {
     const originalRequest = error.config as RetryConfig
 
-    // Se for erro de rede (backend não disponível), retornar dados mock
-    if (error.code === 'ERR_NETWORK' || error.message === 'Network Error') {
+    const clearAuthAndRedirect = () => {
+      localStorage.removeItem(STORAGE_KEYS.AUTH_TOKEN)
+      localStorage.removeItem(STORAGE_KEYS.REFRESH_TOKEN)
+      localStorage.removeItem(STORAGE_KEYS.IS_AUTHENTICATED)
+
+      if (window.location.pathname !== '/login' && window.location.pathname !== '/register') {
+        window.location.href = '/login'
+      }
+    }
+
+    if (error.response?.status === HTTP_STATUS.UNAUTHORIZED) {
+      const refreshTokenValue = localStorage.getItem(STORAGE_KEYS.REFRESH_TOKEN)
+      const isRefreshEndpoint = originalRequest?.url?.includes('/auth/refresh')
+      const isLoginEndpoint = originalRequest?.url?.includes('/auth/login')
+      const isRegisterEndpoint = originalRequest?.url?.includes('/auth/register')
+
+      if (refreshTokenValue && originalRequest && !originalRequest._retry && !isRefreshEndpoint && !isLoginEndpoint && !isRegisterEndpoint) {
+        originalRequest._retry = true
+
+        try {
+          const refreshResponse = await axios.post<AuthResponse>(
+            `${API_CONFIG.BASE_URL}/auth/refresh`,
+            { refreshToken: refreshTokenValue },
+            { headers: { 'Content-Type': 'application/json' } }
+          )
+
+          const { access_token, refresh_token: newRefreshToken } = refreshResponse.data
+
+          localStorage.setItem(STORAGE_KEYS.AUTH_TOKEN, access_token)
+          if (newRefreshToken) {
+            localStorage.setItem(STORAGE_KEYS.REFRESH_TOKEN, newRefreshToken)
+          }
+
+          if (originalRequest.headers) {
+            originalRequest.headers.Authorization = `Bearer ${access_token}`
+            return http(originalRequest)
+          }
+        } catch (refreshError) {
+          console.warn('Erro ao renovar token:', refreshError)
+          clearAuthAndRedirect()
+        }
+      } else {
+        clearAuthAndRedirect()
+      }
+
+      return Promise.reject(error)
+    }
+
+    // Se for erro de rede (backend não disponível), retornar dados mock apenas em desenvolvimento
+    if ((error.code === 'ERR_NETWORK' || error.message === 'Network Error') && import.meta.env.DEV) {
       console.warn('Backend não disponível, usando dados mock')
 
       // Simular resposta baseada na URL

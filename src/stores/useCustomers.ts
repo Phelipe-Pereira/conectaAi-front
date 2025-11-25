@@ -22,7 +22,7 @@ export const useCustomers = defineStore('customers', () => {
   const currentPage = ref(1)
   const itemsPerPage = ref(20)
   const filters = ref<CustomerFilters>({})
-  
+
   const snackbar = useSnackbar()
 
   const hasMore = computed(() => {
@@ -33,11 +33,15 @@ export const useCustomers = defineStore('customers', () => {
     loading.value = true
     try {
       const response = await apiClient.customers.list(params)
-      customers.value = response.data.items || []
-      totalItems.value = response.data.items?.length || 0
-      return response.data
-    } catch (error) {
-      snackbar.error('Erro ao carregar clientes')
+      const pageData = response.data as any
+      const items = (pageData.content || pageData.items || []) as Customer[]
+
+      customers.value = items
+      totalItems.value = pageData.totalElements || pageData.total || items.length
+      return pageData
+    } catch (error: any) {
+      const errorMessage = error.response?.data?.message || 'Erro ao carregar clientes'
+      snackbar.error(errorMessage)
       throw error
     } finally {
       loading.value = false
@@ -62,12 +66,21 @@ export const useCustomers = defineStore('customers', () => {
     loading.value = true
     try {
       const response = await apiClient.customers.create(data)
-      customers.value.unshift(response.data)
+      const newCustomer = {
+        ...response.data,
+        provider: data.provider || 'ASAAS'
+      }
+      customers.value.unshift(newCustomer)
       totalItems.value += 1
       snackbar.success('Cliente criado com sucesso!')
-      return response.data
-    } catch (error) {
-      snackbar.error('Erro ao criar cliente')
+      return newCustomer
+    } catch (error: any) {
+      const errorMessage = error.response?.data?.message ||
+                          error.response?.data?.error ||
+                          (Array.isArray(error.response?.data?.errors)
+                            ? error.response.data.errors.map((e: any) => e.message || e).join(', ')
+                            : 'Erro ao criar cliente')
+      snackbar.error(errorMessage)
       throw error
     } finally {
       loading.value = false
@@ -78,22 +91,25 @@ export const useCustomers = defineStore('customers', () => {
     loading.value = true
     try {
       const response = await apiClient.customers.update(id, data)
-      
-      // Atualizar na lista
+
       const index = customers.value.findIndex(c => c.id === id)
       if (index !== -1) {
         customers.value[index] = response.data
       }
-      
-      // Atualizar cliente atual se for o mesmo
+
       if (currentCustomer.value?.id === id) {
         currentCustomer.value = response.data
       }
-      
+
       snackbar.success('Cliente atualizado com sucesso!')
       return response.data
-    } catch (error) {
-      snackbar.error('Erro ao atualizar cliente')
+    } catch (error: any) {
+      const errorMessage = error.response?.data?.message ||
+                          error.response?.data?.error ||
+                          (Array.isArray(error.response?.data?.errors)
+                            ? error.response.data.errors.map((e: any) => e.message || e).join(', ')
+                            : 'Erro ao atualizar cliente')
+      snackbar.error(errorMessage)
       throw error
     } finally {
       loading.value = false
@@ -104,22 +120,21 @@ export const useCustomers = defineStore('customers', () => {
     loading.value = true
     try {
       await apiClient.customers.delete(id)
-      
-      // Remover da lista
+
       const index = customers.value.findIndex(c => c.id === id)
       if (index !== -1) {
         customers.value.splice(index, 1)
         totalItems.value -= 1
       }
-      
-      // Limpar cliente atual se for o mesmo
+
       if (currentCustomer.value?.id === id) {
         currentCustomer.value = null
       }
-      
+
       snackbar.success('Cliente removido com sucesso!')
-    } catch (error) {
-      snackbar.error('Erro ao remover cliente')
+    } catch (error: any) {
+      const errorMessage = error.response?.data?.message || 'Erro ao remover cliente'
+      snackbar.error(errorMessage)
       throw error
     } finally {
       loading.value = false
@@ -134,7 +149,7 @@ export const useCustomers = defineStore('customers', () => {
 
   const loadMoreCustomers = async () => {
     if (!hasMore.value || loading.value) {return}
-    
+
     const lastCustomer = customers.value[customers.value.length - 1]
     if (lastCustomer) {
       filters.value.starting_after = lastCustomer.id
