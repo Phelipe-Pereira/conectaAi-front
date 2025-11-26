@@ -23,6 +23,7 @@ interface RegisterData {
   email: string
   password: string
   confirmPassword: string
+  cpfCnpj: string
 }
 
 interface AuthResponse {
@@ -84,6 +85,7 @@ export const useAuth = defineStore('auth', () => {
         username: data.name,
         email: data.email,
         password: data.password,
+        cpfCnpj: data.cpfCnpj,
       })
 
       const { user: userData, access_token, refresh_token } = response.data

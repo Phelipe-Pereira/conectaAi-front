@@ -1,6 +1,5 @@
 <template>
   <div class="cobrancas-container">
-    <!-- Header da página -->
     <div class="page-header">
       <div class="header-content">
         <div class="header-info">
@@ -22,7 +21,6 @@
       </div>
     </div>
 
-    <!-- Cards de estatísticas -->
     <div class="stats-cards">
       <div class="stat-card">
         <div class="stat-icon">
@@ -65,7 +63,6 @@
       </div>
     </div>
 
-    <!-- Filtros e busca -->
     <div class="filters-section">
       <div class="filters-content">
         <v-text-field
@@ -109,7 +106,6 @@
       </div>
     </div>
 
-    <!-- Tabela de cobranças -->
     <div class="table-section">
       <v-data-table
         :headers="headers"
@@ -167,10 +163,14 @@
           </v-chip>
         </template>
 
+        <!-- aqui usamos o customer interno da sua base -->
         <template #item.customer_id="{ item }">
           <div class="customer-cell">
             <v-icon size="16" color="info" class="mr-2">mdi-account</v-icon>
-            <span>{{ item.customer_id }}</span>
+            <span>
+              {{ item.customer?.full_name || item.customer?.name || 'Cliente sem nome' }}
+              <span v-if="item.customer?.id"> (ID: {{ item.customer.id }})</span>
+            </span>
           </div>
         </template>
 
@@ -197,6 +197,7 @@
               color="warning"
               @click="editCobranca(item)"
               class="action-btn"
+              :disabled="item.status === 'CANCELLED'"
             />
             <v-btn
               icon="mdi-delete"
@@ -205,13 +206,14 @@
               color="error"
               @click="deleteCobranca(item)"
               class="action-btn"
+              :disabled="item.status === 'CANCELLED'"
             />
           </div>
         </template>
       </v-data-table>
     </div>
 
-    <!-- Dialog de criação/edição -->
+    <!-- diálogo de criação/edição -->
     <v-dialog v-model="showCreateDialog" max-width="800px" persistent>
       <v-card class="cobranca-dialog">
         <v-card-title class="dialog-title">
@@ -235,6 +237,7 @@
                   step="0.01"
                 />
               </v-col>
+
               <v-col cols="12" md="6">
                 <v-select
                   v-model="novaCobranca.payment_method"
@@ -245,6 +248,7 @@
                   required
                 />
               </v-col>
+
               <v-col cols="12">
                 <v-text-field
                   v-model="novaCobranca.description"
@@ -255,13 +259,16 @@
                   required
                 />
               </v-col>
+
               <v-col cols="12" md="6">
                 <v-select
                   v-model="novaCobranca.customer_id"
-                  :items="customersStore.customers.map(c => ({
-                    title: `${c.full_name || c.name || `${c.first_name || ''} ${c.last_name || ''}`.trim()} (${c.id})`,
-                    value: c.id
-                  }))"
+                  :items="
+                    customersStore.customers.map(c => ({
+                      title: `${c.full_name || c.name || `${c.first_name || ''} ${c.last_name || ''}`.trim()} (${c.id})`,
+                      value: c.id,
+                    }))
+                  "
                   label="Cliente"
                   variant="outlined"
                   :rules="[rules.required]"
@@ -269,6 +276,7 @@
                   :loading="customersStore.loading"
                 />
               </v-col>
+
               <v-col cols="12" md="6">
                 <v-text-field
                   v-model="novaCobranca.due_date"
@@ -280,6 +288,7 @@
                   :min="new Date().toISOString().split('T')[0]"
                 />
               </v-col>
+
               <v-col cols="12" md="6">
                 <v-select
                   v-model="novaCobranca.currency"
@@ -290,6 +299,7 @@
                   required
                 />
               </v-col>
+
               <v-col cols="12">
                 <v-textarea
                   v-model="novaCobranca.metadata"
@@ -305,7 +315,7 @@
 
         <v-card-actions class="dialog-actions">
           <v-spacer />
-          <v-btn variant="outlined" @click="cancelForm" class="cancel-btn"> Cancelar </v-btn>
+          <v-btn variant="outlined" @click="cancelForm" class="cancel-btn">Cancelar</v-btn>
           <v-btn
             color="primary"
             @click="saveCobranca"
@@ -319,7 +329,7 @@
       </v-card>
     </v-dialog>
 
-    <!-- Dialog de visualização -->
+    <!-- diálogo de detalhes -->
     <v-dialog v-model="showViewDialog" max-width="700px">
       <v-card class="view-dialog">
         <v-card-title class="dialog-title">
@@ -337,15 +347,31 @@
         <v-card-text v-if="selectedCobranca" class="dialog-content">
           <div class="details-grid">
             <div class="detail-item">
-              <div class="detail-label">ID</div>
+              <div class="detail-label">ID Interno</div>
               <div class="detail-value font-mono">{{ selectedCobranca.id }}</div>
             </div>
+
+            <div class="detail-item">
+              <div class="detail-label">ID Externo</div>
+              <div class="detail-value font-mono">
+                {{ selectedCobranca.external_id || '-' }}
+              </div>
+            </div>
+
+            <div class="detail-item">
+              <div class="detail-label">ID no Gateway</div>
+              <div class="detail-value font-mono">
+                {{ selectedCobranca.provider_payment_id || '-' }}
+              </div>
+            </div>
+
             <div class="detail-item">
               <div class="detail-label">Valor</div>
               <div class="detail-value font-weight-bold text-success">
                 {{ formatCurrency(selectedCobranca.amount) }}
               </div>
             </div>
+
             <div class="detail-item">
               <div class="detail-label">Status</div>
               <div class="detail-value">
@@ -354,6 +380,7 @@
                 </v-chip>
               </div>
             </div>
+
             <div class="detail-item">
               <div class="detail-label">Método</div>
               <div class="detail-value">
@@ -362,25 +389,55 @@
                 </v-chip>
               </div>
             </div>
+
             <div class="detail-item full-width">
               <div class="detail-label">Descrição</div>
-              <div class="detail-value">{{ selectedCobranca.description }}</div>
+              <div class="detail-value">
+                {{ selectedCobranca.description || '-' }}
+              </div>
             </div>
+
             <div class="detail-item">
               <div class="detail-label">Cliente</div>
-              <div class="detail-value">{{ selectedCobranca.customer_id }}</div>
+              <div class="detail-value">
+                {{ selectedCobranca.customer?.full_name || selectedCobranca.customer?.name || 'Cliente sem nome' }}
+                <span v-if="selectedCobranca.customer?.id">
+                  (ID interno: {{ selectedCobranca.customer.id }})
+                </span>
+              </div>
             </div>
+
             <div class="detail-item">
               <div class="detail-label">Moeda</div>
               <div class="detail-value">{{ selectedCobranca.currency }}</div>
             </div>
+
+            <div class="detail-item">
+              <div class="detail-label">Vencimento</div>
+              <div class="detail-value">
+                {{ formatDate(selectedCobranca.due_date) }}
+              </div>
+            </div>
+
+            <div class="detail-item">
+              <div class="detail-label">Pago em</div>
+              <div class="detail-value">
+                {{ formatDate(selectedCobranca.paid_at) }}
+              </div>
+            </div>
+
             <div class="detail-item">
               <div class="detail-label">Criada em</div>
-              <div class="detail-value">{{ formatDate(selectedCobranca.created_at) }}</div>
+              <div class="detail-value">
+                {{ formatDate(selectedCobranca.created_at) }}
+              </div>
             </div>
+
             <div class="detail-item">
               <div class="detail-label">Atualizada em</div>
-              <div class="detail-value">{{ formatDate(selectedCobranca.updated_at) }}</div>
+              <div class="detail-value">
+                {{ formatDate(selectedCobranca.updated_at) }}
+              </div>
             </div>
           </div>
         </v-card-text>
@@ -418,7 +475,7 @@ const novaCobranca = ref({
   metadata: '',
 })
 
-const statusOptions = ['Todos', 'PENDING', 'PAID', 'FAILED', 'CANCELED', 'REFUNDED']
+const statusOptions = ['Todos', 'PENDING', 'PAID', 'FAILED', 'CANCELLED', 'REFUNDED']
 const methodOptions = ['Todos', 'CARD', 'BOLETO', 'PIX', 'CHECKOUT_LINK']
 
 const rules = {
@@ -432,6 +489,8 @@ const headers = [
   { title: 'Descrição', key: 'description' },
   { title: 'Status', key: 'status', sortable: true },
   { title: 'Método', key: 'payment_method', sortable: true },
+  // continuamos usando key customer_id apenas para o slot e label,
+  // mas buscamos os dados de item.customer.* no template
   { title: 'Cliente', key: 'customer_id' },
   { title: 'Criada em', key: 'created_at', sortable: true },
   { title: 'Ações', key: 'actions', sortable: false },
@@ -440,22 +499,34 @@ const headers = [
 const cobrancasFiltradas = computed(() => {
   let filtered = chargesStore.charges
 
-  if (searchTerm.value) {
-    const search = searchTerm.value.toLowerCase()
-    filtered = filtered.filter(
-      (cobranca: any) =>
-        cobranca.id?.toLowerCase().includes(search) ||
-        cobranca.description?.toLowerCase().includes(search) ||
-        cobranca.customer_id?.toLowerCase().includes(search),
-    )
-  }
-
   if (selectedStatus.value !== 'Todos') {
     filtered = filtered.filter((cobranca: any) => cobranca.status === selectedStatus.value)
   }
 
+  if (searchTerm.value) {
+    const search = searchTerm.value.toLowerCase()
+    filtered = filtered.filter((cobranca: any) => {
+      const id = cobranca.id?.toString().toLowerCase() || ''
+      const desc = cobranca.description?.toLowerCase() || ''
+      const customerId = cobranca.customer?.id?.toString().toLowerCase() || ''
+      const customerName =
+        (cobranca.customer?.full_name ||
+          cobranca.customer?.name ||
+          '')?.toString().toLowerCase() || ''
+
+      return (
+        id.includes(search) ||
+        desc.includes(search) ||
+        customerId.includes(search) ||
+        customerName.includes(search)
+      )
+    })
+  }
+
   if (selectedMethod.value !== 'Todos') {
-    filtered = filtered.filter((cobranca: any) => cobranca.payment_method === selectedMethod.value)
+    filtered = filtered.filter(
+      (cobranca: any) => cobranca.payment_method === selectedMethod.value,
+    )
   }
 
   return filtered
@@ -470,19 +541,27 @@ const stats = computed(() => {
   return { total, paid, pending, failed }
 })
 
-const viewCobranca = (cobranca: any) => {
-  selectedCobranca.value = cobranca
-  showViewDialog.value = true
+const viewCobranca = async (cobranca: any) => {
+  try {
+    const { data } = await http.get(`/payments/${cobranca.id}`)
+    // aqui vem o PaymentResponseDto completo, com external_id, provider_payment_id e customer.*
+    selectedCobranca.value = data
+    showViewDialog.value = true
+  } catch (error) {
+    console.error('Erro ao carregar detalhes da cobrança', error)
+  }
 }
 
 const editCobranca = (cobranca: any) => {
   editingCobranca.value = cobranca
   novaCobranca.value = {
+    provider: 'ASAAS' as const,
     amount: cobranca.amount.toString(),
     description: cobranca.description,
     payment_method: cobranca.payment_method,
     currency: cobranca.currency,
-    customer_id: cobranca.customer_id,
+    customer_id: cobranca.customer?.id ?? '',
+    due_date: cobranca.due_date ?? '',
     metadata: JSON.stringify(cobranca.metadata || {}, null, 2),
   }
   showCreateDialog.value = true
@@ -492,8 +571,9 @@ const deleteCobranca = async (cobranca: any) => {
   if (confirm('Tem certeza que deseja cancelar esta cobrança?')) {
     try {
       await chargesStore.cancelCharge(cobranca.id)
+      await chargesStore.listCharges()
     } catch (error) {
-      // Erro já tratado no store
+      console.error('Erro ao cancelar cobrança', error)
     }
   }
 }
@@ -505,9 +585,8 @@ const saveCobranca = async () => {
 
   try {
     if (editingCobranca.value) {
-      // Editar
       await chargesStore.updateCharge(editingCobranca.value.id, {
-          description: novaCobranca.value.description,
+        description: novaCobranca.value.description,
       })
     } else {
       const dueDate = novaCobranca.value.due_date
@@ -515,9 +594,9 @@ const saveCobranca = async () => {
         : new Date()
       dueDate.setDate(dueDate.getDate() + 7)
 
-      const response = await http.post('/payments', {
+      await http.post('/payments', {
         provider: novaCobranca.value.provider,
-        customer_id: parseInt(novaCobranca.value.customer_id),
+        customer_id: parseInt(novaCobranca.value.customer_id, 10),
         amount: parseFloat(novaCobranca.value.amount),
         currency: novaCobranca.value.currency,
         payment_method: novaCobranca.value.payment_method,
@@ -531,6 +610,7 @@ const saveCobranca = async () => {
     showCreateDialog.value = false
     resetForm()
   } catch (error) {
+    console.error('Erro ao salvar cobrança', error)
   }
 }
 
@@ -559,7 +639,8 @@ const formatCurrency = (value: number) => {
   }).format(value)
 }
 
-const formatDate = (dateString: string) => {
+const formatDate = (dateString: string | null | undefined) => {
+  if (!dateString) return '-'
   return new Date(dateString).toLocaleDateString('pt-BR', {
     day: '2-digit',
     month: '2-digit',
@@ -574,7 +655,7 @@ const getStatusColor = (status: string) => {
     PENDING: 'warning',
     PAID: 'success',
     FAILED: 'error',
-    CANCELED: 'grey',
+    CANCELLED: 'grey',
     REFUNDED: 'info',
   }
   return colors[status] || 'grey'
@@ -585,7 +666,7 @@ const getStatusText = (status: string) => {
     PENDING: 'Pendente',
     PAID: 'Paga',
     FAILED: 'Falhou',
-    CANCELED: 'Cancelada',
+    CANCELLED: 'Cancelada (removida)',
     REFUNDED: 'Reembolsada',
   }
   return texts[status] || status
@@ -616,7 +697,7 @@ const getStatusIcon = (status: string) => {
     PENDING: 'mdi-clock',
     PAID: 'mdi-check-circle',
     FAILED: 'mdi-close-circle',
-    CANCELED: 'mdi-cancel',
+    CANCELLED: 'mdi-cancel',
     REFUNDED: 'mdi-refresh',
   }
   return icons[status] || 'mdi-help'
@@ -636,7 +717,7 @@ const clearFilters = () => {
   searchTerm.value = ''
   selectedStatus.value = 'Todos'
   selectedMethod.value = 'Todos'
-  chargesStore.clearFilters()
+  chargesStore.clearFilters?.()
   chargesStore.listCharges()
 }
 
@@ -649,24 +730,6 @@ watch(searchTerm, (newValue) => {
   if (newValue) {
     chargesStore.searchCharges(newValue)
   } else {
-    chargesStore.listCharges()
-  }
-})
-
-watch(selectedStatus, (newValue) => {
-  if (newValue !== 'Todos') {
-    chargesStore.filterByStatus(newValue as any)
-  } else {
-    chargesStore.clearFilters()
-    chargesStore.listCharges()
-  }
-})
-
-watch(selectedMethod, (newValue) => {
-  if (newValue !== 'Todos') {
-    chargesStore.filterByPaymentMethod(newValue as any)
-  } else {
-    chargesStore.clearFilters()
     chargesStore.listCharges()
   }
 })
@@ -684,10 +747,13 @@ onMounted(async () => {
 </script>
 
 <style scoped>
+/* (styles exatamente como você já tinha) */
 .cobrancas-container {
   max-width: 1400px;
   margin: 0 auto;
 }
+
+/* ... resto do CSS igual ao seu ... */
 
 .page-header {
   background: linear-gradient(135deg, rgba(255, 255, 255, 0.1), rgba(255, 255, 255, 0.05));

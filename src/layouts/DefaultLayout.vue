@@ -189,9 +189,9 @@ const toggleDrawer = () => {
   }
 }
 
-const logout = () => {
-  authStore.logout()
-  router.push('/login')
+const logout = async () => {
+  await authStore.logout()          // garante limpar token/user
+  await router.replace({ name: 'home' })
 }
 
 // Watch para fechar drawer em mobile quando navegar

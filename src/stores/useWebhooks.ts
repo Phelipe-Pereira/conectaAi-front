@@ -1,6 +1,5 @@
 import { defineStore } from 'pinia'
 import { ref, computed } from 'vue'
-import { apiClient } from '@/sdk'
 import { useSnackbar } from './useSnackbar'
 import type { components } from '@/sdk/types'
 
@@ -15,7 +14,43 @@ interface WebhookFilters {
   starting_after?: string
 }
 
+// Dados iniciais (somente em memória)
+const INITIAL_WEBHOOKS: WebhookEndpoint[] = [
+  {
+    id: 'whk_prod_01',
+    url: 'https://conectaai.meusistema.com/webhooks/asaas',
+    enabled_events: [
+      'charge.created',
+      'charge.paid',
+      'subscription.created',
+      'subscription.canceled',
+    ],
+    created_at: '2025-11-18T18:30:00-03:00',
+    updated_at: '2025-11-18T18:35:00-03:00',
+    provider: 'ASAAS' as any,
+  } as WebhookEndpoint,
+  {
+    id: 'whk_hml_01',
+    url: 'https://hml.conectaai.meusistema.com/webhooks/asaas',
+    enabled_events: ['charge.created', 'charge.updated', 'customer.created'],
+    created_at: '2025-11-17T09:15:00-03:00',
+    updated_at: '2025-11-17T09:20:00-03:00',
+    provider: 'ASAAS' as any,
+  } as WebhookEndpoint,
+  {
+    id: 'whk_dev_01',
+    url: 'http://localhost:8080/webhooks/asaas',
+    enabled_events: ['charge.created'],
+    created_at: '2025-11-16T14:00:00-03:00',
+    updated_at: '2025-11-16T14:05:00-03:00',
+    provider: 'ASAAS' as any,
+  } as WebhookEndpoint,
+]
+
 export const useWebhooks = defineStore('webhooks', () => {
+  // fonte de verdade em memória
+  const allWebhooks = ref<WebhookEndpoint[]>([...INITIAL_WEBHOOKS])
+
   const webhooks = ref<WebhookEndpoint[]>([])
   const currentWebhook = ref<WebhookEndpoint | null>(null)
   const loading = ref(false)
@@ -31,29 +66,47 @@ export const useWebhooks = defineStore('webhooks', () => {
   })
 
   const enabledWebhooks = computed(() => {
-    return webhooks.value.filter((webhook) => (webhook.enabled_events?.length ?? 0) > 0)
+    return allWebhooks.value.filter((webhook) => (webhook.enabled_events?.length ?? 0) > 0)
   })
 
   const disabledWebhooks = computed(() => {
-    return webhooks.value.filter((webhook) => !webhook.enabled_events?.length)
+    return allWebhooks.value.filter((webhook) => !webhook.enabled_events?.length)
   })
 
   const totalEvents = computed(() => {
-    return webhooks.value.reduce((sum, webhook) => {
+    return allWebhooks.value.reduce((sum, webhook) => {
       return sum + (webhook.enabled_events?.length ?? 0)
     }, 0)
   })
 
+  const applyFilters = () => {
+    let result = [...allWebhooks.value]
+
+    if (filters.value.search) {
+      const search = filters.value.search.toLowerCase()
+      result = result.filter((w) => w.url?.toLowerCase().includes(search))
+    }
+
+    if (typeof filters.value.enabled === 'boolean') {
+      if (filters.value.enabled) {
+        result = result.filter((w) => (w.enabled_events?.length ?? 0) > 0)
+      } else {
+        result = result.filter((w) => !w.enabled_events?.length)
+      }
+    }
+
+    webhooks.value = result
+    totalItems.value = result.length
+  }
+
+  const fakeDelay = (ms = 200) => new Promise((resolve) => setTimeout(resolve, ms))
+
   const listWebhooks = async () => {
     loading.value = true
     try {
-      const response = await apiClient.webhooks.list()
-      webhooks.value = response.data.items || []
-      totalItems.value = response.data.items?.length || 0
-      return response.data
-    } catch (error) {
-      snackbar.error('Erro ao carregar webhooks')
-      throw error
+      await fakeDelay()
+      applyFilters()
+      return { items: webhooks.value, total: totalItems.value }
     } finally {
       loading.value = false
     }
@@ -62,12 +115,13 @@ export const useWebhooks = defineStore('webhooks', () => {
   const getWebhook = async (id: string) => {
     loading.value = true
     try {
-      const response = await apiClient.webhooks.get(id)
-      currentWebhook.value = response.data
-      return response.data
-    } catch (error) {
-      snackbar.error('Erro ao carregar webhook')
-      throw error
+      await fakeDelay()
+      const found = allWebhooks.value.find((w) => w.id === id) || null
+      currentWebhook.value = found
+      if (!found) {
+        snackbar.error('Webhook não encontrado')
+      }
+      return found
     } finally {
       loading.value = false
     }
@@ -76,14 +130,23 @@ export const useWebhooks = defineStore('webhooks', () => {
   const createWebhook = async (data: CreateWebhookEndpointRequest) => {
     loading.value = true
     try {
-      const response = await apiClient.webhooks.create(data)
-      webhooks.value.unshift(response.data)
-      totalItems.value += 1
+      await fakeDelay()
+
+      const now = new Date().toISOString()
+      const newWebhook: WebhookEndpoint = {
+        id: `whk_${Date.now()}`,
+        url: data.url,
+        enabled_events: (data.enabled_events as any) ?? [],
+        created_at: now,
+        updated_at: now,
+        provider: 'ASAAS' as any,
+      } as WebhookEndpoint
+
+      allWebhooks.value.unshift(newWebhook)
+      applyFilters()
+
       snackbar.success('Webhook criado com sucesso!')
-      return response.data
-    } catch (error) {
-      snackbar.error('Erro ao criar webhook')
-      throw error
+      return newWebhook
     } finally {
       loading.value = false
     }
@@ -92,24 +155,32 @@ export const useWebhooks = defineStore('webhooks', () => {
   const updateWebhook = async (id: string, data: UpdateWebhookEndpointRequest) => {
     loading.value = true
     try {
-      const response = await apiClient.webhooks.update(id, data)
+      await fakeDelay()
 
-      // Atualizar na lista
-      const index = webhooks.value.findIndex((w) => w.id === id)
-      if (index !== -1) {
-        webhooks.value[index] = response.data
+      const index = allWebhooks.value.findIndex((w) => w.id === id)
+      if (index === -1) {
+        snackbar.error('Webhook não encontrado')
+        return null
       }
 
-      // Atualizar webhook atual se for o mesmo
+      const updated: WebhookEndpoint = {
+        ...allWebhooks.value[index],
+        url: data.url ?? allWebhooks.value[index].url,
+        enabled_events: (data.enabled_events as any) ?? allWebhooks.value[index].enabled_events,
+        updated_at: new Date().toISOString(),
+      } as WebhookEndpoint
+
+      allWebhooks.value[index] = updated
+
+      // atualiza lista filtrada
+      applyFilters()
+
       if (currentWebhook.value?.id === id) {
-        currentWebhook.value = response.data
+        currentWebhook.value = updated
       }
 
       snackbar.success('Webhook atualizado com sucesso!')
-      return response.data
-    } catch (error) {
-      snackbar.error('Erro ao atualizar webhook')
-      throw error
+      return updated
     } finally {
       loading.value = false
     }
@@ -118,24 +189,22 @@ export const useWebhooks = defineStore('webhooks', () => {
   const deleteWebhook = async (id: string) => {
     loading.value = true
     try {
-      await apiClient.webhooks.delete(id)
+      await fakeDelay()
 
-      // Remover da lista
-      const index = webhooks.value.findIndex((w) => w.id === id)
-      if (index !== -1) {
-        webhooks.value.splice(index, 1)
-        totalItems.value -= 1
+      const index = allWebhooks.value.findIndex((w) => w.id === id)
+      if (index === -1) {
+        snackbar.error('Webhook não encontrado')
+        return
       }
 
-      // Limpar webhook atual se for o mesmo
+      allWebhooks.value.splice(index, 1)
+      applyFilters()
+
       if (currentWebhook.value?.id === id) {
         currentWebhook.value = null
       }
 
       snackbar.success('Webhook removido com sucesso!')
-    } catch (error) {
-      snackbar.error('Erro ao remover webhook')
-      throw error
     } finally {
       loading.value = false
     }
@@ -154,27 +223,22 @@ export const useWebhooks = defineStore('webhooks', () => {
   }
 
   const loadMoreWebhooks = async () => {
-    if (!hasMore.value || loading.value) {return}
-
-    const lastWebhook = webhooks.value[webhooks.value.length - 1]
-    if (lastWebhook) {
-      filters.value.starting_after = lastWebhook.id
-      const response = await apiClient.webhooks.list()
-      webhooks.value.push(...(response.data.items || []))
-    }
+    // pra demo não precisa de paginação; mantém apenas a assinatura
+    return
   }
 
   const clearFilters = () => {
     filters.value = {}
     currentPage.value = 1
+    applyFilters()
   }
 
   const resetStore = () => {
-    webhooks.value = []
-    currentWebhook.value = null
-    totalItems.value = 0
-    currentPage.value = 1
+    allWebhooks.value = [...INITIAL_WEBHOOKS]
     filters.value = {}
+    currentPage.value = 1
+    applyFilters()
+    currentWebhook.value = null
   }
 
   // Utilitários para eventos de webhook
@@ -209,6 +273,9 @@ export const useWebhooks = defineStore('webhooks', () => {
     }
     return eventColors[event] || 'grey'
   }
+
+  // Inicializa lista com dados locais
+  applyFilters()
 
   return {
     webhooks,

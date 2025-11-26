@@ -12,7 +12,9 @@ const formData = ref({
   email: '',
   senha: '',
   confirmarSenha: '',
+  cpfCnpj: '',
   termos: false,
+  telefone: '',
 })
 
 const validateEmail = (email) => {
@@ -35,6 +37,11 @@ const validatePhone = (phone) => {
   return phoneRegex.test(phone)
 }
 
+const validateCpfCnpj = (value) => {
+  const digits = value.replace(/\D/g, '')
+  return digits.length === 11 || digits.length === 14
+}
+
 const formatPhone = () => {
   let value = formData.value.telefone.replace(/\D/g, '')
 
@@ -54,7 +61,8 @@ const handleRegister = async () => {
     !formData.value.username ||
     !formData.value.email ||
     !formData.value.senha ||
-    !formData.value.confirmarSenha
+    !formData.value.confirmarSenha ||
+    !formData.value.cpfCnpj
   ) {
     error.value = 'Por favor, preencha todos os campos obrigatórios.'
     return
@@ -67,6 +75,11 @@ const handleRegister = async () => {
 
   if (!validateEmail(formData.value.email)) {
     error.value = 'Por favor, insira um email válido.'
+    return
+  }
+
+  if (!validateCpfCnpj(formData.value.cpfCnpj)) {
+    error.value = 'CPF deve ter 11 dígitos ou CNPJ deve ter 14 dígitos.'
     return
   }
 
@@ -94,9 +107,10 @@ const handleRegister = async () => {
 
   const success = await authStore.register({
     name: formData.value.username,
-        email: formData.value.email,
+    email: formData.value.email,
     password: formData.value.senha,
     confirmPassword: formData.value.confirmarSenha,
+    cpfCnpj: formData.value.cpfCnpj.replace(/\D/g, ''),
   })
 
   if (success) {
@@ -151,6 +165,22 @@ const goToLogin = () => {
               required
               placeholder="Digite seu email"
             />
+          </div>
+
+          <div class="form-group">
+            <label for="cpfCnpj">CPF ou CNPJ</label>
+            <input
+              id="cpfCnpj"
+              v-model="formData.cpfCnpj"
+              type="text"
+              class="input"
+              required
+              placeholder="000.000.000-00 ou 00.000.000/0000-00"
+              maxlength="18"
+            />
+            <small style="color: var(--text-secondary); font-size: 0.75rem;">
+              Digite seu CPF (11 dígitos) ou CNPJ (14 dígitos)
+            </small>
           </div>
 
           <div class="form-group">

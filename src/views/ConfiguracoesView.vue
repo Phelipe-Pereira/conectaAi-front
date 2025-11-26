@@ -1,5 +1,15 @@
 <script setup>
-import { ref } from 'vue'
+import { ref, onMounted } from 'vue'
+import http from '@/services/http'
+import { useSnackbar } from '@/stores/useSnackbar'
+
+const snackbar = useSnackbar()
+
+const gatewayConfig = ref({
+  asaasApiKey: '',
+})
+
+const gatewayStatus = ref(null)
 
 const configuracoes = ref({
   empresa: {
@@ -31,18 +41,79 @@ const configuracoes = ref({
   },
 })
 
-const activeTab = ref('empresa')
+const activeTab = ref('gateway')
 
 const tabs = [
+  { id: 'gateway', label: 'Gateway', icon: '🔑' },
   { id: 'empresa', label: 'Empresa', icon: '🏢' },
   { id: 'sistema', label: 'Sistema', icon: '⚙️' },
   { id: 'notificacoes', label: 'Notificações', icon: '🔔' },
   { id: 'seguranca', label: 'Segurança', icon: '🔒' },
 ]
 
+const loadGatewayStatus = async () => {
+  try {
+    const response = await http.get('/gateway/config/asaas')
+    gatewayStatus.value = response.data
+  } catch (error) {
+    console.error('Erro ao carregar status do gateway:', error)
+  }
+}
+
+const saveGatewayConfig = async () => {
+  if (!gatewayConfig.value.asaasApiKey) {
+    snackbar.error('Por favor, digite a chave de API do Asaas')
+    return
+  }
+
+  try {
+    await http.post('/gateway/config/asaas', {
+      asaasApiKey: gatewayConfig.value.asaasApiKey,
+    })
+    snackbar.success('Chave do Asaas salva com sucesso!')
+    gatewayConfig.value.asaasApiKey = ''
+    await loadGatewayStatus()
+  } catch (error) {
+    const errorMessage = error.response?.data?.message || 'Erro ao salvar chave do Asaas'
+    snackbar.error(errorMessage)
+  }
+}
+
+const testGatewayConfig = async () => {
+  try {
+    await http.post('/gateway/config/asaas', {
+      asaasApiKey: gatewayConfig.value.asaasApiKey,
+    })
+    snackbar.success('Chave do Asaas válida!')
+    await loadGatewayStatus()
+  } catch (error) {
+     const errorMessage = error.response?.data?.message || 'Erro ao remover chave do Asaas'
+     snackbar.error(errorMessage)
+  }
+}
+
+const removeGatewayConfig = async () => {
+  if (!confirm('Tem certeza que deseja remover a chave do Asaas?')) {
+    return
+  }
+
+  try {
+    await http.delete('/gateway/config/asaas')
+    snackbar.success('Chave do Asaas removida com sucesso!')
+    await loadGatewayStatus()
+  } catch (error) {
+     const errorMessage = error.response?.data?.message || 'Chave do Asaas inválida'
+     snackbar.error(errorMessage)
+  }
+}
+
 const saveConfig = () => {
   console.log('Configurações salvas:', configuracoes.value)
 }
+
+onMounted(async () => {
+  await loadGatewayStatus()
+})
 </script>
 
 <template>
@@ -71,6 +142,48 @@ const saveConfig = () => {
       </div>
 
       <div class="tab-content">
+        <div v-if="activeTab === 'gateway'" class="tab-panel">
+          <div class="config-section">
+            <h2>Configuração do Gateway Asaas</h2>
+            <div class="gateway-config">
+              <div class="form-group full-width">
+                <label>Chave de API do Asaas</label>
+                <input
+                  v-model="gatewayConfig.asaasApiKey"
+                  type="password"
+                  placeholder="Digite sua chave de API do Asaas"
+                />
+                <small style="color: var(--text-secondary); font-size: 0.75rem; margin-top: 8px; display: block;">
+                  Esta chave será usada para todas as operações no gateway Asaas.
+                  Você pode encontrar sua chave no painel do Asaas em Configurações > Integrações.
+                </small>
+              </div>
+              <div class="gateway-status" v-if="gatewayStatus">
+                <div class="status-item">
+                  <span class="status-label">Status:</span>
+                  <span class="status-value" :class="{ 'status-valid': gatewayStatus.asaasApiKeyValid, 'status-invalid': !gatewayStatus.asaasApiKeyValid }">
+                    {{ gatewayStatus.asaasApiKeyValid ? '✓ Configurado e válido' : '✗ Não configurado ou inválido' }}
+                  </span>
+                </div>
+              </div>
+              <div class="gateway-actions">
+                <button @click="saveGatewayConfig" class="btn-save">
+                  <span>💾</span>
+                  Salvar Chave
+                </button>
+                <button @click="testGatewayConfig" class="btn-test" v-if="gatewayConfig.asaasApiKey">
+                  <span>🧪</span>
+                  Testar Chave
+                </button>
+                <button @click="removeGatewayConfig" class="btn-remove" v-if="gatewayStatus?.hasAsaasApiKey">
+                  <span>🗑️</span>
+                  Remover Chave
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+
         <div v-if="activeTab === 'empresa'" class="tab-panel">
           <div class="config-section">
             <h2>Informações da Empresa</h2>
@@ -523,6 +636,88 @@ input:checked + .toggle-slider {
 
 input:checked + .toggle-slider:before {
   transform: translateX(26px);
+}
+
+.gateway-config {
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+}
+
+.gateway-status {
+  padding: 16px;
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 8px;
+}
+
+.status-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.status-label {
+  color: rgba(255, 255, 255, 0.8);
+  font-weight: 500;
+}
+
+.status-value {
+  font-weight: 600;
+}
+
+.status-valid {
+  color: #4caf50;
+}
+
+.status-invalid {
+  color: #f44336;
+}
+
+.gateway-actions {
+  display: flex;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+.btn-test {
+  padding: 12px 24px;
+  background: linear-gradient(135deg, #4caf50, #45a049);
+  color: white;
+  border: none;
+  border-radius: 8px;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.btn-test:hover {
+  background: linear-gradient(135deg, #45a049, #3d8b40);
+  transform: translateY(-2px);
+}
+
+.btn-remove {
+  padding: 12px 24px;
+  background: linear-gradient(135deg, #f44336, #d32f2f);
+  color: white;
+  border: none;
+  border-radius: 8px;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.btn-remove:hover {
+  background: linear-gradient(135deg, #d32f2f, #c62828);
+  transform: translateY(-2px);
 }
 
 @media (max-width: 768px) {

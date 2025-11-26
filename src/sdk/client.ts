@@ -55,9 +55,6 @@ export const apiClient = {
       http.post<Customer>('/customers', data),
 
     update: (id: string, data: UpdateCustomerRequest) =>
-      http.patch<Customer>(`/customers/${id}`, data),
-
-    replace: (id: string, data: UpdateCustomerRequest) =>
       http.put<Customer>(`/customers/${id}`, data),
 
     delete: (id: string) =>
@@ -76,7 +73,7 @@ export const apiClient = {
       http.post<Charge>('/payments', data),
 
     update: (id: string, data: { description?: string; metadata?: Record<string, unknown> }) =>
-      http.patch<Charge>(`/payments/${id}`, data),
+      http.put<Charge>(`/payments/${id}`, data),
 
     cancel: (id: string) =>
       http.delete<Charge>(`/payments/${id}`),
@@ -100,7 +97,7 @@ export const apiClient = {
       http.post<Subscription>('/subscriptions', data),
 
     update: (id: string, data: UpdateSubscriptionRequest) =>
-      http.patch<Subscription>(`/subscriptions/${id}`, data),
+      http.put<Subscription>(`/subscriptions/${id}`, data),
 
     cancel: (id: string) =>
       http.delete(`/subscriptions/${id}`),

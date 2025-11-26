@@ -49,25 +49,37 @@ const headers = [
 ]
 
 const filteredClientes = computed(() => {
-  let filtered = customersStore.customers
+  let filtered = customersStore.customers as any[]
+
+  if (selectedStatus.value === 'Ativo') {
+    filtered = filtered.filter((cliente) => cliente.active === true)
+  } else if (selectedStatus.value === 'Inativo') {
+    filtered = filtered.filter((cliente) => cliente.active === false)
+  }
 
   if (searchTerm.value) {
     const search = searchTerm.value.toLowerCase()
-    filtered = filtered.filter(
-      (cliente: any) => {
-        const fullName = cliente.full_name || cliente.name || `${cliente.first_name || ''} ${cliente.last_name || ''}`.trim()
-        return fullName?.toLowerCase().includes(search) ||
-          cliente.email?.toLowerCase().includes(search) ||
-          cliente.cpf?.includes(search) ||
-          cliente.document?.includes(search)
-      },
-    )
+    filtered = filtered.filter((cliente: any) => {
+      const fullName =
+        cliente.full_name ||
+        cliente.name ||
+        `${cliente.first_name || ''} ${cliente.last_name || ''}`.trim()
+      return (
+        fullName?.toLowerCase().includes(search) ||
+        cliente.email?.toLowerCase().includes(search) ||
+        cliente.cpf?.includes(search) ||
+        cliente.document?.includes(search)
+      )
+    })
   }
 
   return filtered
 })
 
-const activeClients = computed(() => customersStore.customers.length)
+const activeClients = computed(() =>
+  customersStore.customers.filter((cliente: any) => cliente.active === true).length,
+)
+
 const newThisMonth = computed(() => {
   const thisMonth = new Date().getMonth()
   return customersStore.customers.filter((cliente: any) => {
@@ -76,6 +88,7 @@ const newThisMonth = computed(() => {
     return clientMonth === thisMonth
   }).length
 })
+
 const withPaymentMethod = computed(() => customersStore.customers.length)
 
 const clearFilters = () => {
@@ -122,8 +135,7 @@ const deleteCliente = async (cliente: any) => {
   if (confirm('Tem certeza que deseja excluir este cliente?')) {
     try {
       await customersStore.deleteCustomer(cliente.id)
-    } catch (error) {
-    }
+    } catch (error) {}
   }
 }
 
@@ -133,10 +145,18 @@ const saveCliente = async () => {
   }
 
   try {
-    const normalizedZipCode = novoCliente.value.zip_code ? novoCliente.value.zip_code.replace(/\D/g, '') : ''
-    const normalizedCpf = novoCliente.value.cpf ? novoCliente.value.cpf.replace(/\D/g, '') : ''
-    const normalizedPhone = novoCliente.value.phone ? novoCliente.value.phone.replace(/\D/g, '') : ''
-    const normalizedState = novoCliente.value.state ? novoCliente.value.state.toUpperCase().trim() : ''
+    const normalizedZipCode = novoCliente.value.zip_code
+      ? novoCliente.value.zip_code.replace(/\D/g, '')
+      : ''
+    const normalizedCpf = novoCliente.value.cpf
+      ? novoCliente.value.cpf.replace(/\D/g, '')
+      : ''
+    const normalizedPhone = novoCliente.value.phone
+      ? novoCliente.value.phone.replace(/\D/g, '')
+      : ''
+    const normalizedState = novoCliente.value.state
+      ? novoCliente.value.state.toUpperCase().trim()
+      : ''
 
     if (editingCliente.value) {
       await customersStore.updateCustomer(editingCliente.value.id, {
@@ -170,8 +190,7 @@ const saveCliente = async () => {
     showCreateDialog.value = false
     resetForm()
     await customersStore.listCustomers()
-  } catch (error) {
-  }
+  } catch (error) {}
 }
 
 const resetForm = () => {
@@ -212,7 +231,6 @@ onMounted(async () => {
 
 <template>
   <div class="clientes-container">
-    <!-- Header da página -->
     <div class="page-header">
       <div class="header-content">
         <div class="header-info">
@@ -234,7 +252,6 @@ onMounted(async () => {
       </div>
     </div>
 
-    <!-- Cards de estatísticas -->
     <div class="stats-cards">
       <div class="stat-card">
         <div class="stat-icon">
@@ -277,7 +294,6 @@ onMounted(async () => {
       </div>
     </div>
 
-    <!-- Filtros e busca -->
     <div class="filters-section">
       <div class="filters-content">
         <v-text-field
@@ -311,7 +327,6 @@ onMounted(async () => {
       </div>
     </div>
 
-    <!-- Tabela de clientes -->
     <div class="table-section">
       <v-data-table
         :headers="headers"
@@ -333,7 +348,13 @@ onMounted(async () => {
               <v-icon>mdi-account</v-icon>
             </v-avatar>
             <div>
-              <div class="customer-name">{{ item.full_name || item.name || `${item.first_name || ''} ${item.last_name || ''}`.trim() }}</div>
+              <div class="customer-name">
+                {{
+                  item.full_name ||
+                  item.name ||
+                  `${item.first_name || ''} ${item.last_name || ''}`.trim()
+                }}
+              </div>
               <div class="customer-email">{{ item.email }}</div>
             </div>
           </div>
@@ -410,7 +431,6 @@ onMounted(async () => {
       </v-data-table>
     </div>
 
-    <!-- Dialog de criação/edição -->
     <v-dialog v-model="showCreateDialog" max-width="700px">
       <v-card class="cliente-dialog">
         <v-card-title class="dialog-title">
@@ -513,7 +533,7 @@ onMounted(async () => {
 
         <v-card-actions class="dialog-actions">
           <v-spacer />
-          <v-btn variant="outlined" @click="cancelForm" class="cancel-btn"> Cancelar </v-btn>
+          <v-btn variant="outlined" @click="cancelForm" class="cancel-btn">Cancelar</v-btn>
           <v-btn
             color="primary"
             @click="saveCliente"
@@ -527,7 +547,6 @@ onMounted(async () => {
       </v-card>
     </v-dialog>
 
-    <!-- Dialog de visualização -->
     <v-dialog v-model="showViewDialog" max-width="700px">
       <v-card class="view-dialog">
         <v-card-title class="dialog-title">
@@ -550,7 +569,13 @@ onMounted(async () => {
             </div>
             <div class="detail-item">
               <div class="detail-label">Nome</div>
-              <div class="detail-value">{{ selectedCliente?.full_name || selectedCliente?.name || `${selectedCliente?.first_name || ''} ${selectedCliente?.last_name || ''}`.trim() }}</div>
+              <div class="detail-value">
+                {{
+                  selectedCliente?.full_name ||
+                  selectedCliente?.name ||
+                  `${selectedCliente?.first_name || ''} ${selectedCliente?.last_name || ''}`.trim()
+                }}
+              </div>
             </div>
             <div class="detail-item">
               <div class="detail-label">E-mail</div>
@@ -558,7 +583,9 @@ onMounted(async () => {
             </div>
             <div class="detail-item">
               <div class="detail-label">CPF</div>
-              <div class="detail-value">{{ formatCPF(selectedCliente?.cpf || selectedCliente?.document || '') }}</div>
+              <div class="detail-value">
+                {{ formatCPF(selectedCliente?.cpf || selectedCliente?.document || '') }}
+              </div>
             </div>
             <div class="detail-item">
               <div class="detail-label">Telefone</div>
@@ -578,7 +605,9 @@ onMounted(async () => {
             </div>
             <div class="detail-item">
               <div class="detail-label">ID no Provedor</div>
-              <div class="detail-value font-mono">{{ selectedCliente?.provider_customer_id || 'N/A' }}</div>
+              <div class="detail-value font-mono">
+                {{ selectedCliente?.provider_customer_id || 'N/A' }}
+              </div>
             </div>
             <div class="detail-item full-width">
               <div class="detail-label">Endereço</div>
@@ -677,6 +706,10 @@ onMounted(async () => {
   justify-content: center;
   background: rgba(255, 255, 255, 0.1);
   border-radius: 12px;
+}
+
+.stat-content {
+  text-align: left;
 }
 
 .stat-value {
@@ -840,7 +873,6 @@ onMounted(async () => {
   font-weight: 600;
 }
 
-/* Responsividade */
 @media (max-width: 768px) {
   .header-content {
     flex-direction: column;

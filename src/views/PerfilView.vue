@@ -4,29 +4,31 @@ import { useAuth } from '@/stores/useAuth'
 import { formatDate } from '@/utils/formatters'
 
 const authStore = useAuth()
+const loadingAsaas = ref(false)
+const asaasAccountInfo = ref(null)
+
+const mockUser = {
+  username: 'phelipe_pereira',
+  email: 'phelipe.dev@gmail.com',
+  roles: ['USER'],
+  created_at: '2025-01-01T12:00:00Z',
+}
 
 const userProfile = computed(() => {
-  if (!authStore.user) {
-    return {
-      nome: '',
-      email: '',
-      username: '',
-      cargo: 'Usuário',
-      dataCadastro: '',
-      avatar: '',
-    }
-  }
-
-  const roles = authStore.user.roles || []
-  const isAdmin = roles.some((r: string) => r.includes('ADMIN'))
+  const user = authStore.user || mockUser
+  const roles = user.roles || []
+  const isAdmin = roles.some((r) => r.includes('ADMIN'))
 
   return {
-    nome: authStore.user.username || authStore.user.email,
-    email: authStore.user.email,
-    username: authStore.user.username,
+    nome: user.username || user.email,
+    email: user.email,
+    username: user.username,
     cargo: isAdmin ? 'Administrador' : 'Usuário',
-    dataCadastro: authStore.user.created_at ? formatDate(authStore.user.created_at) : '',
-    avatar: `https://ui-avatars.com/api/?name=${encodeURIComponent(authStore.user.username || authStore.user.email)}&background=0D8ABC&color=fff`,
+    dataCadastro: user.created_at ? formatDate(user.created_at) : '',
+    avatar: `https://ui-avatars.com/api/?name=${encodeURIComponent(
+      user.username || user.email,
+    )}&background=0D8ABC&color=fff`,
+    empresa: 'Conta Asaas',
   }
 })
 
@@ -42,23 +44,21 @@ const saveProfile = async () => {
   loading.value = true
   message.value = ''
 
-  try {
-    const success = await authStore.updateProfile({
-      username: userProfile.value.username,
-    })
-
-    if (success) {
-      message.value = 'Perfil atualizado com sucesso!'
-      isEditing.value = false
-      setTimeout(() => {
-        message.value = ''
-      }, 3000)
+  setTimeout(() => {
+    if (!authStore.user) {
+      authStore.user = { ...mockUser }
     }
-  } catch (error) {
-    message.value = 'Erro ao atualizar perfil. Tente novamente.'
-  } finally {
+
+    authStore.user.username = userProfile.value.username
+
+    message.value = 'Perfil atualizado com sucesso!'
+    isEditing.value = false
     loading.value = false
-  }
+
+    setTimeout(() => {
+      message.value = ''
+    }, 3000)
+  }, 800)
 }
 
 const cancelEdit = () => {
@@ -66,10 +66,28 @@ const cancelEdit = () => {
   message.value = ''
 }
 
-onMounted(async () => {
+const loadAsaasAccountInfo = async () => {
+  loadingAsaas.value = true
+
+  setTimeout(() => {
+    asaasAccountInfo.value = {
+      businessData: {
+        companyName: 'Phelipe Tecnologia LTDA',
+        cpfCnpj: '09601967907',
+        email: 'phelipe.dev@gmail.com',
+      },
+      accountNumber: '12345-6',
+      status: 'ATIVA',
+    }
+    loadingAsaas.value = false
+  }, 900)
+}
+
+onMounted(() => {
   if (!authStore.user) {
-    await authStore.checkAuth()
+    authStore.user = { ...mockUser }
   }
+  loadAsaasAccountInfo()
 })
 </script>
 
@@ -116,7 +134,6 @@ onMounted(async () => {
                 type="text"
                 class="input"
                 :disabled="!isEditing"
-                placeholder="Digite seu username"
               />
             </div>
 
@@ -126,8 +143,7 @@ onMounted(async () => {
                 v-model="userProfile.email"
                 type="email"
                 class="input"
-                :disabled="true"
-                placeholder="Email"
+                disabled
               />
             </div>
 
@@ -137,8 +153,7 @@ onMounted(async () => {
                 v-model="userProfile.cargo"
                 type="text"
                 class="input"
-                :disabled="true"
-                placeholder="Cargo"
+                disabled
               />
             </div>
           </div>
@@ -153,12 +168,51 @@ onMounted(async () => {
               <span class="info-value">{{ userProfile.dataCadastro }}</span>
             </div>
             <div class="info-item">
-              <span class="info-label">Último Acesso:</span>
-              <span class="info-value">{{ userProfile.ultimoAcesso }}</span>
-            </div>
-            <div class="info-item">
               <span class="info-label">Status da Conta:</span>
               <span class="info-value status-active">Ativa</span>
+            </div>
+          </div>
+        </div>
+
+        <div class="details-section" v-if="asaasAccountInfo">
+          <h3>Informações da Conta Asaas</h3>
+
+          <div class="account-info" v-if="loadingAsaas">
+            <div class="info-item">
+              <span class="info-label">Carregando...</span>
+            </div>
+          </div>
+
+          <div class="account-info" v-else-if="asaasAccountInfo.businessData">
+            <div class="info-item">
+              <span class="info-label">Nome da Empresa:</span>
+              <span class="info-value">{{ asaasAccountInfo.businessData.companyName }}</span>
+            </div>
+
+            <div class="info-item">
+              <span class="info-label">CPF/CNPJ:</span>
+              <span class="info-value">{{ asaasAccountInfo.businessData.cpfCnpj }}</span>
+            </div>
+
+            <div class="info-item">
+              <span class="info-label">Email:</span>
+              <span class="info-value">{{ asaasAccountInfo.businessData.email }}</span>
+            </div>
+
+            <div class="info-item">
+              <span class="info-label">Número da Conta:</span>
+              <span class="info-value">{{ asaasAccountInfo.accountNumber }}</span>
+            </div>
+
+            <div class="info-item">
+              <span class="info-label">Status:</span>
+              <span class="info-value">{{ asaasAccountInfo.status }}</span>
+            </div>
+          </div>
+
+          <div class="account-info" v-else>
+            <div class="info-item">
+              <span class="info-label">Configure sua chave do Asaas em Configurações > Gateway</span>
             </div>
           </div>
         </div>

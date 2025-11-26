@@ -1,21 +1,20 @@
 <script setup>
 import { useRouter } from 'vue-router'
 import { onMounted } from 'vue'
-import { useAuth } from '@/stores/useAuth'
 
 const router = useRouter()
-const auth = useAuth()
 
+// Usa a mesma regra do router: existe auth_token?
+const isAuthenticated = () => {
+  return !!localStorage.getItem('auth_token')
+}
+
+// Se já estiver autenticado, redireciona para dashboard
 onMounted(() => {
-  // Se já estiver autenticado, redirecionar para dashboard
-  if (auth.isAuthenticated) {
+  if (isAuthenticated()) {
     router.push('/dashboard')
   }
 })
-
-const isAuthenticated = () => {
-  return localStorage.getItem('isAuthenticated') === 'true'
-}
 
 const goToDashboard = () => {
   if (isAuthenticated()) {
@@ -186,7 +185,7 @@ const goToAuthOrDashboard = () => {
           <div class="footer-links">
             <div class="footer-column">
               <h4>Segurança</h4>
-              <a href="#" @click="goToDashboard">Dashboard</a>
+              <a href="#" @click.prevent="goToDashboard">Dashboard</a>
               <a href="#">Redes sociais</a>
             </div>
             <div class="footer-column">

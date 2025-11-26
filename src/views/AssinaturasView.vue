@@ -170,14 +170,16 @@
         <template #item.customer_id="{ item }">
           <div class="customer-cell">
             <v-icon size="16" color="info" class="mr-2">mdi-account</v-icon>
-            <span>{{ item.customer_id }}</span>
+            <span>
+              {{ item.customer?.full_name || item.customer?.email || item.customer_id }}
+            </span>
           </div>
         </template>
 
         <template #item.next_billing="{ item }">
           <div class="date-cell">
             <v-icon size="16" color="warning" class="mr-2">mdi-calendar</v-icon>
-            {{ formatDate(item.next_billing) }}
+            {{ formatDate(item.next_billing || item.start_at) }}
           </div>
         </template>
 
@@ -189,14 +191,6 @@
               variant="text"
               color="primary"
               @click="viewAssinatura(item)"
-              class="action-btn"
-            />
-            <v-btn
-              icon="mdi-pencil"
-              size="small"
-              variant="text"
-              color="warning"
-              @click="editAssinatura(item)"
               class="action-btn"
             />
             <v-btn
@@ -234,9 +228,9 @@
     <v-dialog v-model="showCreateDialog" max-width="800px" persistent>
       <v-card class="assinatura-dialog">
         <v-card-title class="dialog-title">
-          <v-icon size="24" class="mr-2">{{
-            editingAssinatura ? 'mdi-pencil' : 'mdi-plus'
-          }}</v-icon>
+          <v-icon size="24" class="mr-2">
+            {{ editingAssinatura ? 'mdi-pencil' : 'mdi-plus' }}
+          </v-icon>
           {{ editingAssinatura ? 'Editar Assinatura' : 'Nova Assinatura' }}
         </v-card-title>
 
@@ -292,7 +286,15 @@
               <v-col cols="12" md="6">
                 <v-select
                   v-model="novaAssinatura.customer_id"
-                  :items="customersStore.customers.map(c => ({ title: c.full_name || c.name || `${c.first_name || ''} ${c.last_name || ''}`.trim(), value: c.id }))"
+                  :items="
+                    customersStore.customers.map((c) => ({
+                      title:
+                        c.full_name ||
+                        c.name ||
+                        `${c.first_name || ''} ${c.last_name || ''}`.trim(),
+                      value: c.id,
+                    }))
+                  "
                   label="Cliente"
                   variant="outlined"
                   :rules="[rules.required]"
@@ -316,7 +318,9 @@
 
         <v-card-actions class="dialog-actions">
           <v-spacer />
-          <v-btn variant="outlined" @click="cancelForm" class="cancel-btn"> Cancelar </v-btn>
+          <v-btn variant="outlined" @click="cancelForm" class="cancel-btn">
+            Cancelar
+          </v-btn>
           <v-btn
             color="primary"
             @click="saveAssinatura"
@@ -349,14 +353,58 @@
           <div class="details-grid">
             <div class="detail-item">
               <div class="detail-label">ID</div>
-              <div class="detail-value font-mono">{{ selectedAssinatura.id }}</div>
+              <div class="detail-value font-mono">
+                {{ selectedAssinatura.id }}
+              </div>
             </div>
+
+            <div class="detail-item">
+              <div class="detail-label">External ID</div>
+              <div class="detail-value font-mono">
+                {{ selectedAssinatura.external_id || '—' }}
+              </div>
+            </div>
+
+            <div class="detail-item">
+              <div class="detail-label">ID no Provedor</div>
+              <div class="detail-value font-mono">
+                {{ selectedAssinatura.provider_subscription_id || '—' }}
+              </div>
+            </div>
+
+            <div class="detail-item">
+              <div class="detail-label">Provedor</div>
+              <div class="detail-value">
+                {{ selectedAssinatura.provider }}
+              </div>
+            </div>
+
+            <div class="detail-item">
+              <div class="detail-label">Cliente</div>
+              <div class="detail-value">
+                {{
+                  selectedAssinatura.customer?.full_name ||
+                  selectedAssinatura.customer?.email ||
+                  selectedAssinatura.customer?.id ||
+                  '—'
+                }}
+              </div>
+            </div>
+
             <div class="detail-item">
               <div class="detail-label">Valor</div>
               <div class="detail-value font-weight-bold text-success">
                 {{ formatCurrency(selectedAssinatura.amount) }}
               </div>
             </div>
+
+            <div class="detail-item">
+              <div class="detail-label">Moeda</div>
+              <div class="detail-value">
+                {{ selectedAssinatura.currency || 'BRL' }}
+              </div>
+            </div>
+
             <div class="detail-item">
               <div class="detail-label">Status</div>
               <div class="detail-value">
@@ -365,45 +413,56 @@
                 </v-chip>
               </div>
             </div>
+
             <div class="detail-item">
-              <div class="detail-label">Plano</div>
+              <div class="detail-label">Intervalo</div>
               <div class="detail-value">
                 <v-chip :color="getPlanColor(selectedAssinatura.interval)" size="small">
                   {{ getPlanText(selectedAssinatura.interval) }}
                 </v-chip>
               </div>
             </div>
+
+            <div class="detail-item">
+              <div class="detail-label">Método de Pagamento</div>
+              <div class="detail-value">
+                {{ selectedAssinatura.payment_method || '—' }}
+              </div>
+            </div>
+
             <div class="detail-item full-width">
               <div class="detail-label">Descrição</div>
-              <div class="detail-value">{{ selectedAssinatura.description }}</div>
+              <div class="detail-value">
+                {{ selectedAssinatura.description || '—' }}
+              </div>
             </div>
+
             <div class="detail-item">
-              <div class="detail-label">Cliente</div>
-              <div class="detail-value">{{ selectedAssinatura.customer_id }}</div>
+              <div class="detail-label">Início</div>
+              <div class="detail-value">
+                {{ formatDate(selectedAssinatura.start_at) }}
+              </div>
             </div>
+
             <div class="detail-item">
-              <div class="detail-label">Moeda</div>
-              <div class="detail-value">{{ selectedAssinatura.currency }}</div>
+              <div class="detail-label">Fim</div>
+              <div class="detail-value">
+                {{ formatDate(selectedAssinatura.end_at) }}
+              </div>
             </div>
-            <div class="detail-item">
-              <div class="detail-label">Próxima Cobrança</div>
-              <div class="detail-value">{{ formatDate(selectedAssinatura.next_billing) }}</div>
-            </div>
-            <div class="detail-item">
-              <div class="detail-label">Ciclo de Cobrança</div>
-              <div class="detail-value">{{ selectedAssinatura.billing_cycle }} dias</div>
-            </div>
-            <div class="detail-item">
-              <div class="detail-label">Dias de Teste</div>
-              <div class="detail-value">{{ selectedAssinatura.trial_days }} dias</div>
-            </div>
+
             <div class="detail-item">
               <div class="detail-label">Criada em</div>
-              <div class="detail-value">{{ formatDate(selectedAssinatura.created_at) }}</div>
+              <div class="detail-value">
+                {{ formatDate(selectedAssinatura.created_at) }}
+              </div>
             </div>
+
             <div class="detail-item">
               <div class="detail-label">Atualizada em</div>
-              <div class="detail-value">{{ formatDate(selectedAssinatura.updated_at) }}</div>
+              <div class="detail-value">
+                {{ formatDate(selectedAssinatura.updated_at || selectedAssinatura.created_at) }}
+              </div>
             </div>
           </div>
         </v-card-text>
@@ -440,7 +499,7 @@ const novaAssinatura = ref({
   start_at: '',
 })
 
-const statusOptions = ['Todos', 'ACTIVE', 'PAUSED', 'CANCELED', 'EXPIRED']
+const statusOptions = ['Todos', 'ACTIVE', 'PAUSED', 'CANCELLED', 'EXPIRED']
 const planOptions = ['Todos', 'MONTHLY', 'QUARTERLY', 'YEARLY', 'CUSTOM']
 
 const rules = {
@@ -466,9 +525,11 @@ const assinaturasFiltradas = computed(() => {
     const search = searchTerm.value.toLowerCase()
     filtered = filtered.filter(
       (assinatura: any) =>
-        assinatura.id?.toLowerCase().includes(search) ||
-        assinatura.description?.toLowerCase().includes(search) ||
-        assinatura.customer_id?.toLowerCase().includes(search),
+        assinatura.id?.toLowerCase?.().includes(search) ||
+        assinatura.description?.toLowerCase?.().includes(search) ||
+        assinatura.customer_id?.toLowerCase?.().includes(search) ||
+        assinatura.customer?.full_name?.toLowerCase?.().includes(search) ||
+        assinatura.customer?.email?.toLowerCase?.().includes(search),
     )
   }
 
@@ -493,21 +554,29 @@ const stats = computed(() => {
 })
 
 const viewAssinatura = (assinatura: any) => {
+  // Aqui assumimos que o objeto já veio no formato do backend (ResponseDto ou Summary + extras)
   selectedAssinatura.value = assinatura
   showViewDialog.value = true
 }
 
 const editAssinatura = (assinatura: any) => {
   editingAssinatura.value = assinatura
+  const amountNumber =
+    typeof assinatura.amount === 'number'
+      ? assinatura.amount
+      : parseFloat(String(assinatura.amount || '0'))
+
   novaAssinatura.value = {
-    provider: 'ASAAS' as const,
-    customer_id: assinatura.customer_id || '',
-    amount: (assinatura.amount / 100).toString(),
-    currency: assinatura.currency || 'BRL' as const,
-    interval: assinatura.interval || 'MONTHLY' as const,
+    provider: (assinatura.provider as any) || 'ASAAS',
+    customer_id: assinatura.customer?.id || assinatura.customer_id || '',
+    amount: amountNumber.toString(),
+    currency: (assinatura.currency as any) || 'BRL',
+    interval: (assinatura.interval as any) || 'MONTHLY',
     payment_method: assinatura.payment_method || 'PIX',
     description: assinatura.description || '',
-    start_at: assinatura.start_at ? new Date(assinatura.start_at).toISOString().split('T')[0] : '',
+    start_at: assinatura.start_at
+      ? String(assinatura.start_at).split('T')[0]
+      : '',
   }
   showCreateDialog.value = true
 }
@@ -516,9 +585,7 @@ const pauseAssinatura = async (assinatura: any) => {
   if (confirm('Tem certeza que deseja pausar esta assinatura?')) {
     try {
       await subscriptionsStore.pauseSubscription(assinatura.id)
-    } catch (error) {
-      // Erro já tratado no store
-    }
+    } catch (error) {}
   }
 }
 
@@ -526,9 +593,7 @@ const resumeAssinatura = async (assinatura: any) => {
   if (confirm('Tem certeza que deseja retomar esta assinatura?')) {
     try {
       await subscriptionsStore.resumeSubscription(assinatura.id)
-    } catch (error) {
-      // Erro já tratado no store
-    }
+    } catch (error) {}
   }
 }
 
@@ -536,12 +601,46 @@ const deleteAssinatura = async (assinatura: any) => {
   if (confirm('Tem certeza que deseja cancelar esta assinatura?')) {
     try {
       await subscriptionsStore.cancelSubscription(assinatura.id)
-    } catch (error) {
-      // Erro já tratado no store
-        }
-      }
+    } catch (error) {}
+  }
 }
 
+const saveAssinatura = async () => {
+  if (!formValid.value) {
+    return
+  }
+
+  const amountNumber = parseFloat(novaAssinatura.value.amount || '0')
+
+  if (!amountNumber || amountNumber <= 0) {
+    alert('Informe um valor válido para a assinatura.')
+    return
+  }
+
+  const payload = {
+    provider: novaAssinatura.value.provider,
+    customer_id: Number(novaAssinatura.value.customer_id),
+    amount: amountNumber,
+    currency: novaAssinatura.value.currency,
+    interval: novaAssinatura.value.interval,
+    payment_method: novaAssinatura.value.payment_method,
+    description: novaAssinatura.value.description || undefined,
+    start_at: novaAssinatura.value.start_at,
+  }
+
+  try {
+    if (editingAssinatura.value) {
+      await subscriptionsStore.updateSubscription(editingAssinatura.value.id, payload as any)
+    } else {
+      await subscriptionsStore.createSubscription(payload as any)
+    }
+
+    showCreateDialog.value = false
+    resetForm()
+  } catch (error) {
+    console.error('Erro ao salvar assinatura', error)
+  }
+}
 
 const cancelForm = () => {
   showCreateDialog.value = false
@@ -571,29 +670,43 @@ const clearFilters = () => {
   subscriptionsStore.listSubscriptions()
 }
 
-const formatCurrency = (value: number) => {
+const formatCurrency = (value: number | string) => {
+  const num =
+    typeof value === 'number'
+      ? value
+      : parseFloat(String(value || '0'))
+
   return new Intl.NumberFormat('pt-BR', {
     style: 'currency',
     currency: 'BRL',
-  }).format(value / 100)
+  }).format(num)
 }
 
-const formatDate = (dateString: string) => {
-  return new Date(dateString).toLocaleDateString('pt-BR', {
-    day: '2-digit',
-    month: '2-digit',
-    year: 'numeric',
-    hour: '2-digit',
-    minute: '2-digit',
-  })
+const formatDate = (raw: string | null | undefined) => {
+  if (!raw) return '—'
+
+  const native = new Date(raw)
+  if (!Number.isNaN(native.getTime())) {
+    return native.toLocaleDateString('pt-BR', {
+      day: '2-digit',
+      month: '2-digit',
+      year: 'numeric',
+    })
+  }
+
+  return String(raw)
 }
 
 const getStatusColor = (status: string) => {
   const colors: Record<string, string> = {
     ACTIVE: 'success',
     PAUSED: 'warning',
-    CANCELED: 'error',
+    CANCELLED: 'error',
     EXPIRED: 'grey',
+    PENDING: 'warning',
+    PAST_DUE: 'error',
+    INCOMPLETE: 'warning',
+    INCOMPLETE_EXPIRED: 'grey',
   }
   return colors[status] || 'grey'
 }
@@ -602,8 +715,13 @@ const getStatusText = (status: string) => {
   const texts: Record<string, string> = {
     ACTIVE: 'Ativa',
     PAUSED: 'Pausada',
-    CANCELED: 'Cancelada',
+    CANCELLED: 'Cancelada',
     EXPIRED: 'Expirada',
+    PENDING: 'Pendente',
+    PAST_DUE: 'Em atraso',
+    INCOMPLETE: 'Incompleta',
+    INCOMPLETE_EXPIRED: 'Incompleta expirada',
+    TRIALING: 'Em teste',
   }
   return texts[status] || status
 }
@@ -612,8 +730,13 @@ const getStatusIcon = (status: string) => {
   const icons: Record<string, string> = {
     ACTIVE: 'mdi-check-circle',
     PAUSED: 'mdi-pause-circle',
-    CANCELED: 'mdi-close-circle',
+    CANCELLED: 'mdi-close-circle',
     EXPIRED: 'mdi-alert-circle',
+    PENDING: 'mdi-timer-sand',
+    PAST_DUE: 'mdi-alert',
+    INCOMPLETE: 'mdi-alert-circle',
+    INCOMPLETE_EXPIRED: 'mdi-alert-octagon',
+    TRIALING: 'mdi-flask',
   }
   return icons[status] || 'mdi-help-circle'
 }
@@ -623,6 +746,7 @@ const getPlanColor = (plan: string) => {
     MONTHLY: 'primary',
     QUARTERLY: 'success',
     YEARLY: 'info',
+    SEMIANNUAL: 'info',
     CUSTOM: 'warning',
   }
   return colors[plan] || 'grey'
@@ -632,6 +756,7 @@ const getPlanText = (plan: string) => {
   const texts: Record<string, string> = {
     MONTHLY: 'Mensal',
     QUARTERLY: 'Trimestral',
+    SEMIANNUAL: 'Semestral',
     YEARLY: 'Anual',
     CUSTOM: 'Personalizado',
   }
@@ -642,6 +767,7 @@ const getPlanIcon = (plan: string) => {
   const icons: Record<string, string> = {
     MONTHLY: 'mdi-calendar-month',
     QUARTERLY: 'mdi-calendar-outline',
+    SEMIANNUAL: 'mdi-calendar-range',
     YEARLY: 'mdi-calendar-star',
     CUSTOM: 'mdi-tune',
   }
@@ -900,7 +1026,7 @@ onMounted(async () => {
   font-size: 0.8em;
   color: #b0b0b0;
   font-weight: bold;
-  min-width: 100px;
+  min-width: 120px;
 }
 
 .detail-value {
