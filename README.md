@@ -1,93 +1,120 @@
-# Middleware Multi-Gateways de Pagamento
+# ConectaAI — Dashboard
 
-Uma plataforma moderna para gerenciamento de múltiplos gateways de pagamento, oferecendo funcionalidades completas para integrar com Asaas, Stripe, MercadoPago e outros gateways.
+Interface web do [ConectaAI Gateway](https://github.com/Phelipe-Pereira/conectaAi_backend): um dashboard para gerenciar pagamentos, assinaturas, clientes e webhooks de múltiplos gateways de pagamento a partir de um único lugar.
 
-## Funcionalidades Principais
+---
 
-- 💳 **Gateways** - Gerenciamento e configuração de gateways de pagamento
-- 📊 **Transações** - Acompanhamento e gestão de transações
-- 🔔 **Webhooks** - Monitoramento de callbacks dos gateways
-- 🛒 **Checkout** - Interface de pagamento simulado
-- ⚙️ **Configurações** - Configurações do sistema e ambiente sandbox
+## O que resolve
 
-## Tecnologias Utilizadas
+Empresas que operam com mais de um gateway de pagamento precisam acessar painéis diferentes, reconciliar dados manualmente e monitorar webhooks em sistemas separados. Este dashboard centraliza tudo — Asaas, Stripe e Mercado Pago — em uma única interface.
 
-- Vue.js 3
-- Vue Router
-- Pinia
-- Chart.js
-- Vue Chart.js
+---
 
-## Requisitos
+## Decisões técnicas
 
-- Node.js 16.x ou superior
-- npm ou yarn
+### Tipos gerados a partir do contrato OpenAPI
 
-## Instalação
+O arquivo `conectaai-public-v1-api.yaml` define o contrato da API. Os tipos TypeScript em `src/sdk/types.ts` são gerados automaticamente via `openapi-typescript` a partir desse contrato — não são escritos à mão. Isso garante que o frontend nunca fica dessincronizado do backend: se o contrato mudar, os tipos atualizam e os erros aparecem em tempo de compilação, não em produção.
 
-1. Clone o repositório:
+### SDK tipado como camada de acesso à API
+
+Em vez de chamar `axios` diretamente nas views ou stores, toda comunicação passa pelo `src/sdk/client.ts` — um cliente fortemente tipado que expõe métodos como `apiClient.charges.create(data)` com inferência completa de entrada e saída. Isso centraliza o contrato de chamada e facilita trocar a implementação HTTP sem tocar em nenhuma store.
+
+### Retry com backoff exponencial
+
+O interceptor em `src/services/http.ts` implementa retry automático para erros `429` (rate limit) e `5xx` (falhas de servidor) com delay exponencial: 1s na primeira tentativa, 2s na segunda. Isso evita que falhas transitórias do backend cheguem como erro para o usuário.
+
+### Refresh token automático
+
+Quando uma requisição retorna `401`, o interceptor tenta renovar o token automaticamente usando o refresh token armazenado. Somente se a renovação falhar o usuário é redirecionado para login. O fluxo é transparente — o usuário não percebe.
+
+---
+
+## Stack
+
+- **Vue 3** com Composition API
+- **TypeScript** em todo o projeto
+- **Pinia** — stores por domínio (`useCharges`, `useCustomers`, `useSubscriptions`, `useWebhooks`, `useAuth`)
+- **Vuetify 3** — componentes de UI
+- **Chart.js** via `vue-chartjs` — gráficos do dashboard
+- **Axios** com interceptors para auth, retry e request ID
+- **Vitest** + `@vue/test-utils` — testes unitários
+- **openapi-typescript** — geração de tipos a partir do contrato OpenAPI
+
+---
+
+## Telas implementadas
+
+| Rota                       | Descrição                                                    |
+| -------------------------- | ------------------------------------------------------------ |
+| `/dashboard`               | Visão geral: cobranças, receita, clientes e assinaturas      |
+| `/dashboard/clientes`      | Listagem, criação e edição de clientes                       |
+| `/dashboard/cobrancas`     | Gestão de cobranças com filtros por status e método          |
+| `/dashboard/assinaturas`   | Assinaturas recorrentes — pausar, retomar, cancelar          |
+| `/dashboard/webhooks`      | Endpoints de webhook cadastrados por gateway                 |
+| `/dashboard/notifications` | Notificações enviadas por canal (email, SMS, WhatsApp, push) |
+| `/dashboard/gateways`      | Configuração dos gateways de pagamento                       |
+| `/checkout`                | Interface de pagamento simulado                              |
+
+---
+
+## Rodando localmente
 
 ```bash
-git clone https://github.com/seu-usuario/conectaai.git
-cd conectaai
-```
-
-2. Instale as dependências:
-
-```bash
+# Instalar dependências
 npm install
-# ou
-yarn install
-```
 
-3. Inicie o servidor de desenvolvimento:
-
-```bash
+# Iniciar em desenvolvimento (proxy para http://localhost:8080)
 npm run dev
-# ou
-yarn dev
+
+# Build de produção
+npm run build
 ```
 
-4. Acesse a aplicação em `http://localhost:5173`
-
-## Build para Produção
-
-Para criar uma versão otimizada para produção:
+O Vite está configurado com proxy: chamadas para `/api` são redirecionadas para `http://localhost:8080` em desenvolvimento, sem necessidade de configurar CORS.
 
 ```bash
-npm run build
-# ou
-yarn build
+# Rodar testes
+npm run test
+
+# Testes em modo watch
+npm run test -- --watch
 ```
 
-## Estrutura do Projeto
+---
+
+## Estrutura
 
 ```
-middleware-payments/
-├── src/
-│   ├── assets/        # Arquivos estáticos (imagens, fontes, etc)
-│   ├── components/    # Componentes Vue reutilizáveis
-│   ├── router/        # Configuração das rotas
-│   ├── stores/        # Stores Pinia
-│   ├── services/      # Serviços de API
-│   ├── utils/         # Utilitários e constantes
-│   └── views/         # Componentes de página
-├── public/           # Arquivos públicos
-└── package.json     # Dependências e scripts
+src/
+├── sdk/
+│   ├── types.ts       # Tipos gerados via openapi-typescript
+│   └── client.ts      # Cliente API tipado (apiClient.charges.list, etc.)
+├── services/
+│   └── http.ts        # Axios com interceptors de auth, retry e request ID
+├── stores/            # Pinia — uma store por domínio de negócio
+├── views/             # Páginas da aplicação
+├── components/
+│   └── common/        # Componentes reutilizáveis (AppForm, AppDataTable, etc.)
+├── router/            # Rotas com guard de autenticação
+├── utils/             # Formatters e validators com testes
+└── constants/         # Configuração centralizada (API, storage keys, etc.)
 ```
 
-## Contribuição
+---
 
-1. Faça o fork do projeto
-2. Crie uma branch para sua feature (`git checkout -b feature/nova-feature`)
-3. Faça commit das suas alterações (`git commit -m 'Adiciona nova feature'`)
-4. Faça push para a branch (`git push origin feature/nova-feature`)
-5. Abra um Pull Request
+## Variáveis de ambiente
 
-## Licença
+Crie um `.env.local` na raiz:
 
-Este projeto está sob a licença MIT. Veja o arquivo [LICENSE](LICENSE) para mais detalhes.
+```env
+VITE_API_BASE_URL=http://localhost:8080/api/v1
+```
 
-## Suporte
+Em produção, configure `VITE_API_BASE_URL` apontando para a URL do backend deployado.
 
-Para suporte, envie um email para suporte@middleware-payments.com ou abra uma issue no GitHub.
+---
+
+## Backend
+
+Este dashboard consome a API do [ConectaAI Gateway](https://github.com/Phelipe-Pereira/conectaAi_backend) — middleware Spring Boot que unifica Asaas, Stripe e Mercado Pago. O contrato completo da API está em `conectaai-public-v1-api.yaml`.
